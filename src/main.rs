@@ -3,7 +3,7 @@
 // region: auto_md_to_doc_comments include README.md A //!
 //! # msg_enc_dec
 //!
-//! **Use SSH private key to encode and decode messages**  
+//! **Use SSH private-public keys to encode and decode messages**  
 //! ***version: 0.0.75 date: 2025-10-06 author: [bestia.dev](https://bestia.dev) repository: [GitHub](https://github.com/bestia-dev/msg_enc_dec)***
 //!
 //!  ![maintained](https://img.shields.io/badge/maintained-green)
@@ -28,10 +28,10 @@
 //! Create the SSH key and protect it with a passcode.
 //!
 //! ```bash
-//! ssh-keygen -t ed25519 -f vault_ssh_1 -C "vault for secret tokens"
+//! ssh-keygen -t ed25519 -f msg_enc_dec_ssh_1 -C "vault for secret tokens"
 //! ```
 //!
-//! Save the file `ssh_private_key_bare_file_name.cfg` with the content `vault_ssh_1`.  
+//! Save the file `ssh_private_key_bare_file_name.cfg` with the content `msg_enc_dec_ssh_1`.  
 //! The program `msg_enc_dec` will read this file to find the SSH private key in the `~/.ssh` folder.
 //!
 //! ## Use SSH private key to store passwords
@@ -91,7 +91,9 @@
 // endregion: auto_md_to_doc_comments include README.md A //!
 
 mod encrypt_decrypt_with_ssh_key_mod;
-use encrypt_decrypt_with_ssh_key_mod as ende;
+use anyhow::Context;
+use base64ct::Encoding;
+use encrypt_decrypt_with_ssh_key_mod::encrypt_decrypt_mod as ende;
 
 // region: Public API constants
 // ANSI colors for Linux terminal
@@ -110,6 +112,9 @@ pub const BLUE: &str = "\x1b[34m";
 pub const RESET: &str = "\x1b[0m";
 // endregion: Public API constants
 
+use crossplatform_path::CrossPathBuf;
+
+use rsa::{pkcs8::DecodePublicKey, traits::PaddingScheme};
 // import trait
 use secrecy::ExposeSecret;
 
@@ -123,50 +128,62 @@ pub struct MsgEncDecConfig {
 /// And then is accessible all over the code.
 pub static MSG_ENC_DEC_CONFIG: std::sync::OnceLock<MsgEncDecConfig> = std::sync::OnceLock::new();
 
-/// Entry point into the bin-executable.
-fn main() {
-    std::panic::set_hook(Box::new(panic_set_hook));
-    tracing_init();
-    msg_enc_dec_config_initialize();
-    // super simple argument parsing. There are crates that can parse more complex arguments.
-    match std::env::args().nth(1).as_deref() {
-        None | Some("--help") | Some("-h") => print_help(),
-        Some("strong") => convert_to_strong_password(),
-        Some("list") => list_token_names(),
-        Some("store") => match std::env::args().nth(2).as_deref() {
-            // second argument
-            Some(token_name) => {
-                store_token(token_name);
-            }
-            None => eprintln!("{RED}Error: Missing arguments `token_name`.{RESET}"),
-        },
-        Some("show") => match std::env::args().nth(2).as_deref() {
-            // second argument
-            Some(token_name) => {
-                show_token(token_name);
-            }
-            None => eprintln!("{RED}Error: Missing arguments `token_name`.{RESET}"),
-        },
-        Some("delete") => match std::env::args().nth(2).as_deref() {
-            // second argument
-            Some(token_name) => {
-                delete_token(token_name);
-            }
-            None => eprintln!("{RED}Error: Missing arguments `token_name`.{RESET}"),
-        },
-        _ => eprintln!("{RED}Error: Unrecognized arguments. Try `msg_enc_dec --help`{RESET}"),
+///main returns ExitCode
+fn main() -> std::process::ExitCode {
+    match main_returns_anyhow_result() {
+        Err(err) => {
+            eprintln!("{}", err);
+            // eprintln!("Exit program with failure exit code 1");
+            std::process::ExitCode::FAILURE
+        }
+        Ok(()) => std::process::ExitCode::SUCCESS,
     }
 }
+
+/// main() returns anyhow::Result
+fn main_returns_anyhow_result() -> anyhow::Result<()> {
+    tracing_init()?;
+    msg_enc_dec_config_initialize()?;
+    // super simple argument parsing. There are crates that can parse more complex arguments.
+    match std::env::args().nth(1).as_deref() {
+        None | Some("--help") | Some("-h") => print_help()?,
+        Some("create_ssh_key") => create_ssh_key()?,
+        Some("public_key") => public_key()?,
+        Some("store_public_key_and_print_token") => store_public_key_and_print_token()?,
+        Some("store_token") => store_token()?,
+        Some("encrypt_message") => encrypt_message()?,
+        Some("decrypt_message") => decrypt_message()?,
+
+        Some("encrypt_file") => match std::env::args().nth(2).as_deref() {
+            // second argument
+            Some(file_name) => {
+                encrypt_file(file_name);
+            }
+            None => eprintln!("{RED}Error: Missing arguments `file_name`.{RESET}"),
+        },
+        Some("decrypt_file") => match std::env::args().nth(2).as_deref() {
+            // second argument
+            Some(file_name) => {
+                decrypt_file(file_name);
+            }
+            None => eprintln!("{RED}Error: Missing arguments `file_name`.{RESET}"),
+        },
+
+        _ => eprintln!("{RED}Error: Unrecognized arguments. Try `msg_enc_dec --help`{RESET}"),
+    }
+    Ok(())
+}
+
 // region: general functions
 
 /// Initialize tracing to file logs/automation_tasks_rs.log
 ///
 /// The folder logs/ is in .gitignore and will not be committed.
-pub fn tracing_init() {
+pub fn tracing_init() -> anyhow::Result<()> {
     // uncomment this line to enable tracing to file
     // let file_appender = tracing_appender::rolling::daily("logs", "msg_enc_dec_your_password.log");
 
-    let offset = time::UtcOffset::current_local_offset().expect("should get local offset!");
+    let offset = time::UtcOffset::current_local_offset()?;
     let timer = tracing_subscriber::fmt::time::OffsetTime::new(
         offset,
         time::macros::format_description!("[hour]:[minute]:[second].[subsecond digits:6]"),
@@ -181,8 +198,8 @@ pub fn tracing_init() {
     // Unset the environment variable RUST_LOG
     // unset RUST_LOG
     let filter = tracing_subscriber::EnvFilter::from_default_env()
-        .add_directive("hyper_util=error".parse().unwrap_or_else(|e| panic!("{e}")))
-        .add_directive("reqwest=error".parse().unwrap_or_else(|e| panic!("{e}")));
+        .add_directive("hyper_util=error".parse()?)
+        .add_directive("reqwest=error".parse()?);
 
     tracing_subscriber::fmt()
         .with_file(true)
@@ -193,32 +210,7 @@ pub fn tracing_init() {
         //.with_writer(file_appender)
         .with_env_filter(filter)
         .init();
-}
-
-/// The original Rust report of the panic is ugly for the end user
-///
-/// I use panics extensively to stop the execution. I am lazy to implement a super complicated error handling.
-/// I just need to stop the execution on every little bit of error. This utility is for developers. They will understand me.
-/// For errors I print the location. If the message contains "Exiting..." than it is a "not-error exit" and  the location is not important.
-fn panic_set_hook(panic_info: &std::panic::PanicHookInfo) {
-    let mut string_message = "".to_string();
-    if let Some(message) = panic_info.payload().downcast_ref::<String>() {
-        string_message = message.to_owned();
-    }
-    if let Some(message) = panic_info.payload().downcast_ref::<&str>() {
-        string_message.push_str(message);
-    }
-
-    tracing::debug!("{string_message}");
-    eprintln!("{string_message}");
-
-    if !string_message.contains("Exiting...") {
-        let file = panic_info.location().unwrap().file();
-        let line = panic_info.location().unwrap().line();
-        let column = panic_info.location().unwrap().column();
-        tracing::debug!("Location: {file}:{line}:{column}");
-        eprintln!("Location: {file}:{line}:{column}");
-    }
+    Ok(())
 }
 
 // endregion: general functions
@@ -226,67 +218,197 @@ fn panic_set_hook(panic_info: &std::panic::PanicHookInfo) {
 /// Application state (static) is initialized only once in the main() function.
 ///
 /// And then is accessible all over the code.
-fn msg_enc_dec_config_initialize() {
+fn msg_enc_dec_config_initialize() -> anyhow::Result<()> {
     if MSG_ENC_DEC_CONFIG.get().is_some() {
-        return;
+        return Ok(());
     }
 
-    let msg_enc_dec_config_json = std::fs::read_to_string("msg_enc_dec_config.json").unwrap();
-    let msg_enc_dec_config: MsgEncDecConfig = serde_json::from_str(&msg_enc_dec_config_json).unwrap();
+    let msg_enc_dec_config_json = std::fs::read_to_string("msg_enc_dec_config.json")?;
+    let msg_enc_dec_config: MsgEncDecConfig = serde_json::from_str(&msg_enc_dec_config_json)?;
     let _ = MSG_ENC_DEC_CONFIG.set(msg_enc_dec_config);
+    Ok(())
 }
 
 /// Print help on the terminal.
-fn print_help() {
+fn print_help() -> anyhow::Result<()> {
     println!(
         r#"
-  {YELLOW}Welcome to msg_enc_dec CLI
-    Please, msg_enc_dec your passwords!
-    This small CLI can store your passwords encrypted with your SSH private key.
-    With the same private key it can convert a simple human readable seed to a strong password.
-    Write the ssh private key file name into the file 'msg_enc_dec_config.json' like. 
-{{
-    "msg_enc_dec_private_key_file_name":"vault_ssh_1"
-}}
-    {RESET}
+  {YELLOW}Welcome to msg_enc_dec CLI{RESET}
+  Use SSH private-public keys to encode and decode messages and files
+  for a secure communication between two users.
 
+  This is the help for this program.
 {GREEN}msg_enc_dec --help{RESET}
-{GREEN}msg_enc_dec strong {RESET}
 
-{GREEN}msg_enc_dec list{RESET}
-{GREEN}msg_enc_dec store token_name{RESET}
-{GREEN}msg_enc_dec show token_name{RESET}
-{GREEN}msg_enc_dec delete token_name{RESET}
+  {YELLOW}INITIALIZATION{RESET}
+
+  Do it only once. Create your ssh key if you don't have it already. 
+  Give it a good passcode and remember it. 
+  Nobody can help you if you forget it. 
+  You would heave to delete the old key and create a new one.
+{GREEN}msg_enc_dec create_ssh_key {RESET}
+
+  {YELLOW}HANDSHAKE{RESET}
+
+  Send the public key to the other party. 
+  It is not a secret.
+{GREEN}msg_enc_dec public_key {RESET}
+
+  Store the received public key and print the encrypted token.
+  Only the owner of the private key is able to decrypt it.
+{GREEN}msg_enc_dec store_public_key_and_print_token {RESET}
+
+  Store the encrypted token.
+  Only the owner of the private key is able to decrypt it.
+{GREEN}msg_enc_dec store_token {RESET}
+
+  {YELLOW}COMMUNICATION{RESET}
+
+  Encrypt message and send the encrypted text.
+{GREEN}msg_enc_dec encrypt_message {RESET}
+  Decrypt the received message.
+{GREEN}msg_enc_dec decrypt_message {RESET}
+  Encrypt file and send the encrypted file.
+{GREEN}msg_enc_dec encrypt_file {RESET}
+  Decrypt the received file.
+{GREEN}msg_enc_dec decrypt_file {RESET}
 
   {YELLOW}© 2025 bestia.dev  MIT License github.com/bestia-dev/msg_enc_dec{RESET}
 "#
     );
+    Ok(())
 }
 
-/// Convert to strong password.
-fn convert_to_strong_password() {
-    let strong_password = ende::generate_strong_password_mod::generate_strong_password().unwrap();
-    println!("{}", strong_password);
+/// Create ssh key and config json.
+fn create_ssh_key() -> anyhow::Result<()> {
+    let config_path = CrossPathBuf::new("msg_enc_dec_config.json")?;
+    config_path.write_str_to_file(
+        r#"
+{
+"msg_enc_dec_private_key_file_name":"msg_enc_dec_ssh_1"
+}   
+"#,
+    )?;
+    println!("  {YELLOW}Copy and run this command manually in the terminal. {RESET}");
+    println!("  {YELLOW}Give it a good passcode and remember it. {RESET}");
+    println!("  {YELLOW}Nobody can help you if you forget the passcode. {RESET}");
+    println!("  {YELLOW}You would heave to delete the old key and create a new one. {RESET}");
+    println!(r#"{GREEN}ssh-keygen -t rsa -b 4096 -f ~/.ssh/msg_enc_dec_ssh_1 -C "ssh key for msg_enc_dec" {RESET}"#);
+    println!();
+    println!("  {YELLOW}After that use 'msg_enc_dec public_key'. {RESET}");
+    Ok(())
 }
 
-/// List token names.
-fn list_token_names() {
-    let vec_string = ende::secret_vault_mod::list_tokens_from_vault().unwrap();
-    println!("{:?}", vec_string);
+/// Print the public key.
+fn public_key() -> anyhow::Result<()> {
+    let private_key_file_name = &MSG_ENC_DEC_CONFIG
+        .get()
+        .context("MSG_ENC_DEC_CONFIG is None")?
+        .msg_enc_dec_private_key_file_name;
+    let public_key_path = CrossPathBuf::new(&format!("~/.ssh/{}.pub", private_key_file_name))?;
+    let public_key = public_key_path.read_to_string()?;
+    println!("  {YELLOW}Send this public key to the other party. This is not a secret. {RESET}");
+    println!("  {YELLOW}They must use 'msg_enc_dec store_public_key_and_print_token'. {RESET}");
+    println!("  {YELLOW}and then send you the token. {RESET}");
+    println!("  {YELLOW}It is encrypted, only the owner of the private key can decrypt it. {RESET}");
+    println!(r#"{GREEN}{public_key} {RESET}"#);
+
+    Ok(())
 }
 
-/// Store token, encrypted.
-fn store_token(token_name: &str) {
-    ende::secret_vault_mod::store_secret_token_to_vault(token_name).unwrap();
+/// store public key and print token
+fn store_public_key_and_print_token() -> anyhow::Result<()> {
+    let public_key = inquire::Text::new(&format!("{BLUE}Copy the public rsa key of the other party:{RESET}")).prompt()?;
+    let other_party_public_key_path = CrossPathBuf::new("other_party_public_key")?;
+    other_party_public_key_path.write_str_to_file(&public_key)?;
+    // random new password
+    // prepare the random bytes, sign it with the other public key, that is the true password used for communication
+
+    let (plain_seed_bytes_32bytes, plain_seed_string) = ende::random_seed_32bytes_and_string()?;
+    // TODO: encrypt before saving file using ssh-agent
+    let security_token_dec = CrossPathBuf::new("security_token_dec_1.txt")?;
+    security_token_dec.write_str_to_file(&plain_seed_string)?;
+
+    // first try to use the private key from ssh-agent, else use the private file with user interaction
+    let public_key = ssh_key::PublicKey::read_openssh_file(&other_party_public_key_path.to_path_buf_current_os())?;
+    let rsa_public_key = public_key
+        .key_data()
+        .rsa()
+        .ok_or_else(|| anyhow::anyhow!("not possible rsa public key"))?;
+    let rsa_public_key: rsa::RsaPublicKey = rsa_public_key.try_into()?;
+
+    let mut rng = rand::thread_rng();
+    let enc_data = rsa_public_key
+        .encrypt(&mut rng, rsa::Pkcs1v15Encrypt, &plain_seed_bytes_32bytes)
+        .expect("failed to encrypt");
+    let token_string = base64ct::Base64Url::encode_string(&enc_data);
+    let security_token_enc = CrossPathBuf::new("security_token_enc_1.txt")?;
+    security_token_enc.write_str_to_file(&token_string)?;
+
+    println!("  {YELLOW}Send this encrypted security token to the other party.{RESET}");
+    println!("  {YELLOW}Only the owner of the private key can decrypt this.{RESET}");
+
+    println!(r#"{GREEN}{token_string} {RESET}"#);
+
+    Ok(())
 }
 
-/// Show token, decrypted.
-fn show_token(token_name: &str) {
-    let secret_token = ende::secret_vault_mod::show_secret_token_from_vault(token_name).unwrap();
-    println!("{}", secret_token.expose_secret());
+/// store token
+fn store_token() -> anyhow::Result<()> {
+    let token = inquire::Text::new(&format!("{BLUE}Copy the encrypted security token.{RESET}")).prompt()?;
+    let security_token_enc_path = CrossPathBuf::new("security_token_enc_2.txt")?;
+    security_token_enc_path.write_str_to_file(&token)?;
+    let token_bytes = base64ct::Base64Url::decode_vec(&token).unwrap();
+
+    // decrypt security token
+    let private_key_path = CrossPathBuf::new("~/.ssh/msg_enc_dec_ssh_1")?;
+    let private_key = ssh_key::PrivateKey::read_openssh_file(&private_key_path.to_path_buf_current_os())?;
+    let private_key = private_key.decrypt("a")?;
+    let rsa_key_pair = private_key
+        .key_data()
+        .rsa()
+        .ok_or_else(|| anyhow::anyhow!("not possible rsa private key"))?;
+    let rsa_private_key = rsa::RsaPrivateKey::from_p_q(
+        rsa_key_pair.private.p.clone().try_into()?,
+        rsa_key_pair.private.q.clone().try_into()?,
+        rsa_key_pair.public.e.clone().try_into()?,
+    )?;
+
+    let dec_data = rsa_private_key
+        .decrypt(rsa::Pkcs1v15Encrypt, &token_bytes)
+        .expect("failed to decrypt");
+    let token_string = base64ct::Base64Url::encode_string(&dec_data);
+
+    // TODO: encrypt before saving file using ssh-agent
+    let security_token_dec = CrossPathBuf::new("security_token_dec_2.txt")?;
+    security_token_dec.write_str_to_file(&token_string)?;
+
+    println!("  {YELLOW}Security token stored.{RESET}");
+    println!("  {YELLOW}Now you can encrypt and decrypt messages and files.{RESET}");
+
+    Ok(())
 }
 
-/// Delete token.
-fn delete_token(token_name: &str) {
-    ende::secret_vault_mod::delete_token_from_vault(token_name).unwrap();
+/// encrypt message from terminal
+fn encrypt_message() -> anyhow::Result<()> {
+    todo!();
+    Ok(())
+}
+
+/// decrypt message from terminal
+fn decrypt_message() -> anyhow::Result<()> {
+    todo!();
+    Ok(())
+}
+
+/// encrypt file
+fn encrypt_file(file_name: &str) -> anyhow::Result<()> {
+    todo!();
+    Ok(())
+}
+
+/// decrypt file
+fn decrypt_file(file_name: &str) -> anyhow::Result<()> {
+    todo!();
+    Ok(())
 }

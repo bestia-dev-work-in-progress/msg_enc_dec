@@ -7,6 +7,7 @@
 //! If you want to customize it, copy the code into main.rs and modify it there.
 
 use crate::{BLUE, GREEN, RED, RESET, YELLOW};
+use anyhow::anyhow;
 use secrecy::{ExposeSecret, ExposeSecretMut, SecretBox, SecretString};
 
 pub struct PathStructInSshFolder {
@@ -70,21 +71,6 @@ pub(crate) fn random_seed_32bytes_and_string() -> anyhow::Result<([u8; 32], Stri
     aes_gcm::aead::OsRng.fill_bytes(&mut seed_32bytes);
     let plain_seed_string = encode64_from_32bytes_to_string(seed_32bytes)?;
     Ok((seed_32bytes, plain_seed_string))
-}
-
-/// Get the string from the file that is base64 encoded.
-///
-/// It is encoded just to obscure it a little.
-pub(crate) fn open_file_b64_get_string(plain_file_b64_path: &camino::Utf8Path) -> anyhow::Result<String> {
-    if !camino::Utf8Path::new(&plain_file_b64_path).exists() {
-        anyhow::bail!("{RED}Error: File {plain_file_b64_path} does not exist! {RESET}");
-    }
-
-    let plain_file_text = std::fs::read_to_string(plain_file_b64_path)?;
-    // it is encoded just to obscure it a little
-    let plain_file_text = decode64_from_string_to_string(&plain_file_text)?;
-
-    Ok(plain_file_text)
 }
 
 /// Shorten the `Vec<u8> to [u8;32]`.  
@@ -285,14 +271,13 @@ pub(crate) fn encrypt_symmetric(
 ) -> anyhow::Result<String> {
     // nonce is salt
     let nonce = <aes_gcm::Aes256Gcm as aes_gcm::AeadCore>::generate_nonce(&mut aes_gcm::aead::OsRng);
-    let Ok(cipher_text_encrypted) = aes_gcm::aead::Aead::encrypt(
+    let cipher_text_encrypted = aes_gcm::aead::Aead::encrypt(
         // cipher_secret is the true passcode, here I don't know how to use secrecy, because the type has not the trait Zeroize
         &<aes_gcm::Aes256Gcm as aes_gcm::KeyInit>::new(secret_passcode_32bytes.expose_secret().into()),
         &nonce,
         secret_string_to_encrypt.expose_secret().as_bytes(),
-    ) else {
-        panic!("{RED}Error: Encryption failed. {RESET}");
-    };
+    )
+    .map_err(|err| anyhow!(err))?;
 
     let mut encrypted_bytes = nonce.to_vec();
     encrypted_bytes.extend_from_slice(&cipher_text_encrypted);
@@ -315,14 +300,14 @@ pub(crate) fn decrypt_symmetric(
     let nonce = rsa::sha2::digest::generic_array::GenericArray::from_slice(&encrypted_bytes[..12]);
     let cipher_text = &encrypted_bytes[12..];
 
-    let Ok(secret_decrypted_bytes) = aes_gcm::aead::Aead::decrypt(
+    let secret_decrypted_bytes = aes_gcm::aead::Aead::decrypt(
         // cipher_secret is the true passcode, here I don't know how to use secrecy, because the type has not the trait Zeroize
         &<aes_gcm::Aes256Gcm as aes_gcm::KeyInit>::new(secret_passcode_32bytes.expose_secret().into()),
         nonce,
         cipher_text,
-    ) else {
-        panic!("{RED}Error: Decryption failed. {RESET}");
-    };
+    )
+    .map_err(|err| anyhow!(err))?;
+
     let secret_decrypted_string = SecretString::from(String::from_utf8(secret_decrypted_bytes)?);
 
     Ok(secret_decrypted_string)
