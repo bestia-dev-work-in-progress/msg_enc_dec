@@ -6,7 +6,7 @@
 [//]: # (auto_cargo_toml_to_md start)
 
 **Use SSH private-public keys to encode and decode messages**  
-***version: 0.0.27 date: 2025-10-08 author: [bestia.dev](https://bestia.dev) repository: [GitHub](https://github.com/bestia-dev/msg_enc_dec)***
+***version: 0.0.58 date: 2025-10-09 author: [bestia.dev](https://bestia.dev) repository: [GitHub](https://github.com/bestia-dev/msg_enc_dec)***
 
  ![maintained](https://img.shields.io/badge/maintained-green)
  ![work-in-progress](https://img.shields.io/badge/work_in_progress-yellow)
@@ -19,9 +19,9 @@
  ![msg_enc_dec](https://bestia.dev/webpage_hit_counter/get_svg_image/779107454.svg)
 
 [//]: # (auto_lines_of_code start)
-[![Lines in Rust code](https://img.shields.io/badge/Lines_in_Rust-531-green.svg)](https://github.com/bestia-dev-work-in-progress/msg_enc_dec/)
-[![Lines in Doc comments](https://img.shields.io/badge/Lines_in_Doc_comments-165-blue.svg)](https://github.com/bestia-dev-work-in-progress/msg_enc_dec/)
-[![Lines in Comments](https://img.shields.io/badge/Lines_in_comments-57-purple.svg)](https://github.com/bestia-dev-work-in-progress/msg_enc_dec/)
+[![Lines in Rust code](https://img.shields.io/badge/Lines_in_Rust-597-green.svg)](https://github.com/bestia-dev-work-in-progress/msg_enc_dec/)
+[![Lines in Doc comments](https://img.shields.io/badge/Lines_in_Doc_comments-86-blue.svg)](https://github.com/bestia-dev-work-in-progress/msg_enc_dec/)
+[![Lines in Comments](https://img.shields.io/badge/Lines_in_comments-72-purple.svg)](https://github.com/bestia-dev-work-in-progress/msg_enc_dec/)
 [![Lines in examples](https://img.shields.io/badge/Lines_in_examples-0-yellow.svg)](https://github.com/bestia-dev-work-in-progress/msg_enc_dec/)
 [![Lines in tests](https://img.shields.io/badge/Lines_in_tests-0-orange.svg)](https://github.com/bestia-dev-work-in-progress/msg_enc_dec/)
 
@@ -29,6 +29,58 @@
 
 Hashtags: #maintained #work-in-progress #rustlang  
 My projects on GitHub are more like a tutorial than a finished product: [bestia-dev tutorials](https://github.com/bestia-dev/tutorials_rust_wasm).  
+
+## ⚠️ Security Warning
+
+The implementation contained in this crate has never been independently audited!
+
+USE AT YOUR OWN RISK!
+
+## Cryptography
+
+Cryptography is a technique of securing information and communications using codes to ensure confidentiality, integrity and authentication.  
+Modern ciphers, such as the Advanced Encryption Standard (AES), are considered virtually unbreakable.  
+Secret key cryptography, also known as symmetric encryption, uses a single key to encrypt and decrypt a message.  
+Public key cryptography (PKC), or asymmetric cryptography, uses mathematical functions to create codes that are exceptionally difficult to crack. It enables people to communicate securely over a non-secure communications channel without the need for a secret key.  
+<https://www.fortinet.com/resources/cyberglossary/what-is-cryptography>
+
+## Ed25519
+
+Ed25519 is the EdDSA signature scheme using SHA-512 (SHA-2) and an elliptic curve related to Curve25519.  
+In public-key cryptography, Edwards-curve Digital Signature Algorithm (EdDSA) is a digital signature scheme using a variant of Schnorr signature based on twisted Edwards curves. It is designed to be faster than existing digital signature schemes without sacrificing security.  
+Public keys are 256 bits long and signatures are 512 bits long.  
+<https://en.wikipedia.org/wiki/EdDSA#Ed25519>
+
+Ed25519 is a signature scheme. It does not do encryption.  
+
+## X25519
+
+X25519 is the name given to the Elliptic Curve Diffie-Hellman (ECDH) key exchange built on Ed22519.  
+<https://medium.com/@aditrizky052/unlocking-the-power-of-curve25519-ed25519-x25519-the-modern-pillars-of-secure-and-high-speed-a3daefbad0a4>
+
+The Diffie-Hellman algorithm (DH) is used for secret key exchanges and requires two people to agree on a large prime number.  
+Key Exchange Algorithm KEA is a variation of the Diffie-Hellman algorithm and was proposed as a method for key exchange.  
+<https://www.fortinet.com/resources/cyberglossary/what-is-cryptography>
+
+## GCM
+
+In cryptography, Galois/Counter Mode (GCM) is a mode of operation for symmetric-key cryptographic block ciphers which is widely adopted for its performance. The GCM algorithm provides data authenticity, integrity and confidentiality and belongs to the class of authenticated encryption with associated data (AEAD) methods.  
+<https://en.wikipedia.org/wiki/Galois/Counter_Mode>  
+
+## OpenSSH
+
+OpenSSH is the premier connectivity tool for remote login with the SSH protocol. It encrypts all traffic to eliminate eavesdropping, connection hijacking, and other attacks.  
+Key management with ssh-add, ssh-keysign, ssh-keyscan, and ssh-keygen, ssh-agent.  
+<https://www.openssh.com/>
+
+Open SSH uses Ed22519 for authentication. The SSH servers has a list of public keys that are authorized. The handshake: The server sends a random message. The client signs it with the private key Ed25519. The SSH server verifies the signature with the public key Ed25519.
+
+OpenSSH comes with tools to manage keys and it is a knowledge every developer learns early and thoroughly. The private key is protected by a passphrase. For repetitive use of the same private key I can use ssh-agent to input the passphrase only once. Usually the key inside ssh-agent is time limited for example for one hour.
+
+## bestia.dev
+
+I use Ed25519 to store encrypted values on the local disk. First I create random 32 bytes called the 'seed'. I sign it with the private key Ed25519. That becomes the password I use to symmetrically encrypt GCM the secret value. In the saved file there is in plain text the seed and the encrypted data. Only the owner of the private key Ed25519 can sign the seed to get the password to then decrypt GCM the data.
+
 
 ## Both sides must use msg_enc_dec
 
@@ -45,12 +97,16 @@ msg_enc_dec
 msg_enc_dec --help
 ```
 
+## activate bash completion
+
+
+
 ## Create your SSH key
 
 Create the SSH key and protect it with a passcode.
 
 ```bash
-ssh-keygen -t rsa -b 4096 -f ~/.ssh/msg_enc_dec_ssh_1 -C "ssh key for msg_enc_dec"
+ssh-keygen -t rsa -b 2048 -f ~/.ssh/msg_enc_dec_ssh_1 -C "ssh key for msg_enc_dec"
 ```
 
 Save the file `msg_enc_dec_config.json` with the content:

@@ -181,11 +181,11 @@ fn task_build() -> anyhow::Result<()> {
 {GREEN}alias msg_enc_dec=./target/debug/{package_name}{RESET}
 {GREEN}msg_enc_dec create_ssh_key{RESET}
 {GREEN}msg_enc_dec public_key{RESET}
-{GREEN}msg_enc_dec store_token{RESET}
-{GREEN}msg_enc_dec encrypt_message{RESET}
-{GREEN}msg_enc_dec decrypt_message{RESET}
-{GREEN}msg_enc_dec encrypt_file file_name{RESET}
-{GREEN}msg_enc_dec decrypt_file file_name{RESET}
+{GREEN}msg_enc_dec receive_public_key_and_calculate_shared_secret{RESET}
+{GREEN}msg_enc_dec message_encrypt{RESET}
+{GREEN}msg_enc_dec message_decrypt{RESET}
+{GREEN}msg_enc_dec file_encrypt file_name{RESET}
+{GREEN}msg_enc_dec file_decrypt file_name{RESET}
   {YELLOW}if {package_name} ok then{RESET}
 {GREEN}cargo auto release{RESET}
 {GREEN}cargo auto win_release{RESET}
@@ -206,11 +206,11 @@ fn task_release() -> anyhow::Result<()> {
 {GREEN}alias msg_enc_dec=./target/release/{package_name}{RESET}
 {GREEN}msg_enc_dec create_ssh_key{RESET}
 {GREEN}msg_enc_dec public_key{RESET}
-{GREEN}msg_enc_dec store_token{RESET}
-{GREEN}msg_enc_dec encrypt_message{RESET}
-{GREEN}msg_enc_dec decrypt_message{RESET}
-{GREEN}msg_enc_dec encrypt_file file_name{RESET}
-{GREEN}msg_enc_dec decrypt_file file_name{RESET}
+{GREEN}msg_enc_dec receive_public_key_and_calculate_shared_secret{RESET}
+{GREEN}msg_enc_dec message_encrypt{RESET}
+{GREEN}msg_enc_dec message_decrypt{RESET}
+{GREEN}msg_enc_dec file_encrypt file_name{RESET}
+{GREEN}msg_enc_dec file_decrypt file_name{RESET}
   {YELLOW}if {package_name} ok then{RESET}
 {GREEN}cargo auto win_release{RESET}
 "#,
@@ -237,11 +237,11 @@ fn task_win_release() -> anyhow::Result<()> {
 {GREEN}msg_enc_dec --help{RESET} 
 {GREEN}msg_enc_dec create_ssh_key{RESET}
 {GREEN}msg_enc_dec public_key{RESET}
-{GREEN}msg_enc_dec store_token{RESET}
-{GREEN}msg_enc_dec encrypt_message{RESET}
-{GREEN}msg_enc_dec decrypt_message{RESET}
-{GREEN}msg_enc_dec encrypt_file file_name{RESET}
-{GREEN}msg_enc_dec decrypt_file file_name{RESET}
+{GREEN}msg_enc_dec receive_public_key_and_calculate_shared_secret{RESET}
+{GREEN}msg_enc_dec message_encrypt{RESET}
+{GREEN}msg_enc_dec message_decrypt{RESET}
+{GREEN}msg_enc_dec file_encrypt file_name{RESET}
+{GREEN}msg_enc_dec file_decrypt file_name{RESET}
 
   {YELLOW}if  {package_name} ok then{RESET}
 {GREEN}cargo auto doc{RESET}

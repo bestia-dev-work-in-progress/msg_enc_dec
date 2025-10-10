@@ -1,6 +1,6 @@
 [package]
 name = "msg_enc_dec"
-version = "0.0.27"
+version = "0.0.58"
 description = "Use SSH private-public keys to encode and decode messages"
 authors = ["bestia.dev"]
 homepage = "https://bestia.dev"
@@ -27,10 +27,10 @@ include = [
 [dependencies]
 tracing = "0.1.41"
 tracing-subscriber = { version = "0.3.19", features = ["env-filter", "std", "fmt", "time"] }
-# tracing-appender="0.2.3"
+tracing-appender="0.2.3"
 time = {version="0.3.39", features=["macros","local-offset"]}
 
-thiserror = "2.0.12"
+thiserror = "2.0.17"
 anyhow="1.0.97"
 # the last version of reqwest that builds in win-git-bah is 0.12.12
 reqwest={version="=0.12.12", features=["json","blocking"]}
@@ -47,5 +47,4 @@ secrecy = "0.10.3"
 home = "0.5.11"
 inquire="0.9.1"
 crossplatform_path="2.0.1"
-# all the rand dependency use rand_core v0.6.4, this is in rand 0.8.5
-rand ="0.8.5"
+x25519-dalek={ version = "2.0.1", features=["getrandom","static_secrets"]}
