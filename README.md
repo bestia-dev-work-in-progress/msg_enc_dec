@@ -5,8 +5,8 @@
 
 [//]: # (auto_cargo_toml_to_md start)
 
-**Use SSH keys, Ed22519, X25519 and GCM to encode and decode messages and files**  
-***version: 0.0.60 date: 2025-10-14 author: [bestia.dev](https://bestia.dev) repository: [GitHub](https://github.com/bestia-dev/msg_enc_dec)***
+**Use SSH keys, Ed22519, X25519 and GCM to encode and decode messages and files for communication**  
+***version: 1.0.2 date: 2025-10-14 author: [bestia.dev](https://bestia.dev) repository: [GitHub](https://github.com/bestia-dev/msg_enc_dec)***
 
  ![maintained](https://img.shields.io/badge/maintained-green)
  ![work-in-progress](https://img.shields.io/badge/work_in_progress-yellow)
@@ -16,10 +16,10 @@
 
  ![License](https://img.shields.io/badge/license-MIT-blue.svg)
  ![Rust](https://github.com/bestia-dev/msg_enc_dec/workflows/rust_fmt_auto_build_test/badge.svg)
- ![msg_enc_dec](https://bestia.dev/webpage_hit_counter/get_svg_image/779107454.svg)
+ ![msg_enc_dec](https://bestia.dev/webpage_hit_counter/get_svg_image/124137175.svg)
 
 [//]: # (auto_lines_of_code start)
-[![Lines in Rust code](https://img.shields.io/badge/Lines_in_Rust-601-green.svg)](https://github.com/bestia-dev-work-in-progress/msg_enc_dec/)
+[![Lines in Rust code](https://img.shields.io/badge/Lines_in_Rust-607-green.svg)](https://github.com/bestia-dev-work-in-progress/msg_enc_dec/)
 [![Lines in Doc comments](https://img.shields.io/badge/Lines_in_Doc_comments-91-blue.svg)](https://github.com/bestia-dev-work-in-progress/msg_enc_dec/)
 [![Lines in Comments](https://img.shields.io/badge/Lines_in_comments-77-purple.svg)](https://github.com/bestia-dev-work-in-progress/msg_enc_dec/)
 [![Lines in examples](https://img.shields.io/badge/Lines_in_examples-0-yellow.svg)](https://github.com/bestia-dev-work-in-progress/msg_enc_dec/)
@@ -149,7 +149,7 @@ The = symbol is also used as a padding suffix. The padding character is not esse
 
 
 
-## Use SSH keys, Ed22519, X25519 and GCM to encode and decode messages and files
+## Use SSH keys, Ed22519, X25519 and GCM to encode and decode messages and files for communication
 
 With one SSH private key, we can store many secret tokens.
 

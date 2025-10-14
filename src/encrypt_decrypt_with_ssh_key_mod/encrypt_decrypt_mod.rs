@@ -116,7 +116,7 @@ pub(crate) fn sign_seed_with_ssh_agent_or_private_key_file(
         println!("{GREEN}ssh-add -t 1h {private_key_path}{RESET}");
         println!("  {YELLOW}Unlock the private key to decrypt the saved file.{RESET}");
 
-        match sign_seed_with_private_key_file(plain_seed_bytes_32bytes, &private_key_path) {
+        match sign_seed_with_private_key_file(plain_seed_bytes_32bytes, private_key_path) {
             Ok(secret_passcode_32bytes) => secret_passcode_32bytes,
             Err(err) => {
                 if err.to_string() == "Passphrase empty" {

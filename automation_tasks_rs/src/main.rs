@@ -180,8 +180,8 @@ fn task_build() -> anyhow::Result<()> {
   {YELLOW}After `cargo auto build`, run the compiled binary, examples and/or tests{RESET}
 {GREEN}alias msg_enc_dec=./target/debug/{package_name}{RESET}
 {GREEN}msg_enc_dec create_ssh_key{RESET}
-{GREEN}msg_enc_dec public_key{RESET}
-{GREEN}msg_enc_dec receive_public_key_and_calculate_shared_secret{RESET}
+{GREEN}msg_enc_dec send_public_key {RESET}
+{GREEN}msg_enc_dec receive_send_public_key {RESET}
 {GREEN}msg_enc_dec message_encrypt{RESET}
 {GREEN}msg_enc_dec message_decrypt{RESET}
 {GREEN}msg_enc_dec file_encrypt file_name{RESET}
@@ -204,13 +204,16 @@ fn task_release() -> anyhow::Result<()> {
         r#"
   {YELLOW}After `cargo auto release`, run the compiled binary, examples and/or tests{RESET}
 {GREEN}alias msg_enc_dec=./target/release/{package_name}{RESET}
+{GREEN}msg_enc_dec --help{RESET} 
+{GREEN}msg_enc_dec activate_completion{RESET} 
 {GREEN}msg_enc_dec create_ssh_key{RESET}
-{GREEN}msg_enc_dec public_key{RESET}
-{GREEN}msg_enc_dec receive_public_key_and_calculate_shared_secret{RESET}
+{GREEN}msg_enc_dec send_public_key {RESET}
+{GREEN}msg_enc_dec receive_public_key{RESET}
 {GREEN}msg_enc_dec message_encrypt{RESET}
 {GREEN}msg_enc_dec message_decrypt{RESET}
 {GREEN}msg_enc_dec file_encrypt file_name{RESET}
 {GREEN}msg_enc_dec file_decrypt file_name{RESET}
+
   {YELLOW}if {package_name} ok then{RESET}
 {GREEN}cargo auto win_release{RESET}
 "#,
@@ -232,12 +235,13 @@ fn task_win_release() -> anyhow::Result<()> {
 {GREEN}cd ~/rustprojects/{package_name}{RESET}
 {GREEN}sshadd crustde{RESET}
 {GREEN}scp rustdevuser@crustde:/home/rustdevuser/rustprojects/{package_name}/target/x86_64-pc-windows-gnu/release/{package_name}.exe . {RESET}
+
 {GREEN}alias msg_enc_dec=./msg_enc_dec.exe{RESET}
-  {YELLOW}Run the exe in Windows git-bash.{RESET}
 {GREEN}msg_enc_dec --help{RESET} 
+{GREEN}msg_enc_dec activate_completion{RESET} 
 {GREEN}msg_enc_dec create_ssh_key{RESET}
-{GREEN}msg_enc_dec public_key{RESET}
-{GREEN}msg_enc_dec receive_public_key_and_calculate_shared_secret{RESET}
+{GREEN}msg_enc_dec send_public_key {RESET}
+{GREEN}msg_enc_dec receive_public_key{RESET}
 {GREEN}msg_enc_dec message_encrypt{RESET}
 {GREEN}msg_enc_dec message_decrypt{RESET}
 {GREEN}msg_enc_dec file_encrypt file_name{RESET}
