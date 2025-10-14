@@ -11,6 +11,10 @@ The TODO section is part of the [README.md](https://github.com/bestia-dev/msg_en
 
 ## Unreleased
 
+## Version 1.0.2 (2025-10-14)
+
+Base64UrlUnpadded
+
 ## Version 0.0.1
 
 - Rust project created with `cargo auto new_cli msg_enc_dec`
