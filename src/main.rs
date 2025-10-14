@@ -7,20 +7,20 @@
 //! ***version: 1.0.2 date: 2025-10-14 author: [bestia.dev](https://bestia.dev) repository: [GitHub](https://github.com/bestia-dev/msg_enc_dec)***
 //!
 //!  ![maintained](https://img.shields.io/badge/maintained-green)
-//!  ![work-in-progress](https://img.shields.io/badge/work_in_progress-yellow)
+//!  ![ready-for-use](https://img.shields.io/badge/ready_for_use-yellow)
 //!  ![rustlang](https://img.shields.io/badge/rustlang-orange)
 //!
 //!  ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 //!  ![Rust](https://github.com/bestia-dev/msg_enc_dec/workflows/rust_fmt_auto_build_test/badge.svg)
 //!  ![msg_enc_dec](https://bestia.dev/webpage_hit_counter/get_svg_image/124137175.svg)
 //!
-//! [![Lines in Rust code](https://img.shields.io/badge/Lines_in_Rust-607-green.svg)](https://github.com/bestia-dev-work-in-progress/msg_enc_dec/)
-//! [![Lines in Doc comments](https://img.shields.io/badge/Lines_in_Doc_comments-91-blue.svg)](https://github.com/bestia-dev-work-in-progress/msg_enc_dec/)
-//! [![Lines in Comments](https://img.shields.io/badge/Lines_in_comments-77-purple.svg)](https://github.com/bestia-dev-work-in-progress/msg_enc_dec/)
-//! [![Lines in examples](https://img.shields.io/badge/Lines_in_examples-0-yellow.svg)](https://github.com/bestia-dev-work-in-progress/msg_enc_dec/)
-//! [![Lines in tests](https://img.shields.io/badge/Lines_in_tests-0-orange.svg)](https://github.com/bestia-dev-work-in-progress/msg_enc_dec/)
+//! [![Lines in Rust code](https://img.shields.io/badge/Lines_in_Rust-607-green.svg)](https://github.com/bestia-dev-ready-for-use/msg_enc_dec/)
+//! [![Lines in Doc comments](https://img.shields.io/badge/Lines_in_Doc_comments-91-blue.svg)](https://github.com/bestia-dev-ready-for-use/msg_enc_dec/)
+//! [![Lines in Comments](https://img.shields.io/badge/Lines_in_comments-77-purple.svg)](https://github.com/bestia-dev-ready-for-use/msg_enc_dec/)
+//! [![Lines in examples](https://img.shields.io/badge/Lines_in_examples-0-yellow.svg)](https://github.com/bestia-dev-ready-for-use/msg_enc_dec/)
+//! [![Lines in tests](https://img.shields.io/badge/Lines_in_tests-0-orange.svg)](https://github.com/bestia-dev-ready-for-use/msg_enc_dec/)
 //!
-//! Hashtags: #maintained #work-in-progress #rustlang  
+//! Hashtags: #maintained #ready-for-use #rustlang  
 //! My projects on GitHub are more like a tutorial than a finished product: [bestia-dev tutorials](https://github.com/bestia-dev/tutorials_rust_wasm).  
 //!
 //! ## ⚠️ Security Warning
@@ -37,7 +37,7 @@
 //!
 //! ```bash
 //! cd ~/rustprojects
-//! git clone git@github.com:bestia-dev-work-in-progress/msg_enc_dec.git
+//! git clone git@github.com:bestia-dev-ready-for-use/msg_enc_dec.git
 //! code msg_enc_dec
 //! cargo auto release
 //! alias msg_enc_dec="./target/release/msg_enc_dec"

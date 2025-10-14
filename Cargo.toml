@@ -9,7 +9,7 @@ license = "MIT"
 readme = "README.md"
 repository = "https://github.com/bestia-dev/msg_enc_dec"
 # Keyword must be only one word: lowercase letters, hyphens(-) or numbers, less then 35 characters, at most 5 keywords per crate
-keywords = ["maintained", "work-in-progress", "rustlang"]
+keywords = ["maintained", "ready-for-use", "rustlang"]
 # allowed categories are listed here <https://crates.io/category_slugs>
 categories = ["command-line-interface"]
 # publish as a cargo tool. Only this files.
