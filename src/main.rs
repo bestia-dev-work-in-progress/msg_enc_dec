@@ -160,9 +160,9 @@ fn print_help() -> anyhow::Result<()> {
         r#"
   {YELLOW}Welcome to msg_enc_dec CLI{RESET}
 
-  Use X25519 to securely share a secret token over any communication channel.
-  Use ssh private key to encrypt and save locally the shared secret token.
-  Use symmetric encryption to encode and decode messages and files
+  Use SSH keys, Ed22519, X25519 and GCM to encode and decode messages and files.
+  Use ssh private key Ed22519 to encrypt and save locally the shared secret token.
+  Use symmetric encryption GCM to encode and decode messages and files
   for a secure communication between two users.
 
   This is the help for this program.
