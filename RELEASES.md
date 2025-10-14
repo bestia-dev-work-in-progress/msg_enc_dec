@@ -13,8 +13,6 @@ The TODO section is part of the [README.md](https://github.com/bestia-dev/msg_en
 
 ## Version 1.0.2 (2025-10-14)
 
-## Version 1.0.2 (2025-10-14)
-
 Base64UrlUnpadded
 
 ## Version 0.0.1
