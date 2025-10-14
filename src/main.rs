@@ -174,7 +174,7 @@ fn print_help() -> anyhow::Result<()> {
   {YELLOW}INITIALIZATION{RESET}
 
   Do it only once. Create your ssh key if you don't have it already. 
-  Give it a good passcode and remember it. 
+  Give it a good passphrase and remember it. 
   Nobody can help you if you forget it. 
   You would have to delete the old key and create a new one.
   This ssh key will be used to save locally the secret session token for the communication.
@@ -182,13 +182,15 @@ fn print_help() -> anyhow::Result<()> {
 
   {YELLOW}HANDSHAKE{RESET}
 
-  Create a new static key-pair X25519 and 
-  send the public key to the other party. 
-  It is not a secret.
+  You can use ssh-agent to type the passphrase of the ssh private key only once for one hour.
+{GREEN}ssh-add -t 1h msg_enc_dec_ssh_1{RESET}
+
+  Create a new static key-pair X25519 and send the public key to the other party. 
+  It is not a secret. You can use any communication available: email, whatsapp, messenger, sms,...
 {GREEN}msg_enc_dec send_public_key {RESET}
 
   Receive the other's public key and calculate the shared secret.
-  Save the shared secret encrypted.
+  Save the encrypted shared secret for later use.
 {GREEN}msg_enc_dec receive_public_key {RESET}
 
   {YELLOW}COMMUNICATION{RESET}
@@ -208,13 +210,12 @@ fn print_help() -> anyhow::Result<()> {
     Ok(())
 }
 
-
-fn activate_completion() -> anyhow::Result<()>{
-    println!("register completion for msg_enc_dec."):
+fn activate_completion() -> anyhow::Result<()> {
+    println!("Register completion for msg_enc_dec.");
     println!("complete -C msg_enc_dec msg_enc_dec");
     let shell_command = r#"complete -C msg_enc_dec msg_enc_dec "#;
     let _status = std::process::Command::new("sh").arg("-c").arg(shell_command).spawn()?.wait()?;
-Ok(())
+    Ok(())
 }
 
 /// Sub-command for bash auto-completion of `msg_enc_dec`.
@@ -407,12 +408,31 @@ fn message_decrypt() -> anyhow::Result<()> {
 
 /// encrypt file
 fn file_encrypt(file_name: &str) -> anyhow::Result<()> {
-    todo!();
+    let shared_secret_bytes = load_and_decrypt("shared_secret")?;
+    // just for debug
+    // let shared_secret_string = ende::encode64_from_32bytes_to_string(shared_secret_bytes)?;
+    //println!("{shared_secret_string}");
+    let shared_secret = SecretBox::new(Box::new(shared_secret_bytes));
+    println!("Read file: {file_name}");
+    let vec_u8 = std::fs::read(file_name)?;
+    let encrypted = ende::encrypt_symmetric_from_bytes(shared_secret, vec_u8)?;
+    println!("Save encrypted file: {file_name}.enc");
+    std::fs::write(format!("{file_name}.enc"), encrypted)?;
     Ok(())
 }
 
 /// decrypt file
 fn file_decrypt(file_name: &str) -> anyhow::Result<()> {
-    todo!();
+    let shared_secret_bytes = load_and_decrypt("shared_secret")?;
+    // just for debug
+    // let shared_secret_string = ende::encode64_from_32bytes_to_string(shared_secret_bytes)?;
+    //println!("{shared_secret_string}");
+    let shared_secret = SecretBox::new(Box::new(shared_secret_bytes));
+    println!("Read encrypted file: {file_name}.enc");
+    let encrypted_file = std::fs::read_to_string(format!("{file_name}.enc"))?;
+    // decrypt secret message with symmetric encryption
+    let decrypted_file = ende::decrypt_symmetric_to_bytes(shared_secret, encrypted_file)?;
+    println!("Save decrypted file: {file_name}");
+    std::fs::write(file_name, decrypted_file)?;
     Ok(())
 }

@@ -6,6 +6,8 @@
 //! cargo auto update_automation_tasks_rs
 //! If you want to customize it, copy the code into main.rs and modify it there.
 
+use std::str::Bytes;
+
 use crate::{BLUE, GREEN, RED, RESET, YELLOW};
 use crossplatform_path::CrossPathBuf;
 use secrecy::{ExposeSecret, ExposeSecretMut, SecretBox, SecretString};
@@ -293,13 +295,40 @@ pub(crate) fn encrypt_symmetric(
     secret_passcode_32bytes: SecretBox<[u8; 32]>,
     secret_string_to_encrypt: SecretString,
 ) -> anyhow::Result<String> {
+    encrypt_symmetric_from_bytes(
+        secret_passcode_32bytes,
+        secret_string_to_encrypt.expose_secret().as_bytes().to_vec(),
+    )
+}
+
+/// Decrypts plain_encrypted_string with secret_passcode_32bytes.
+///
+/// Consumes secret_passcode_32bytes and encrypted_string.  
+/// Returns the secret_decrypted_string.  
+pub(crate) fn decrypt_symmetric(
+    secret_passcode_32bytes: SecretBox<[u8; 32]>,
+    plain_encrypted_string: String,
+) -> anyhow::Result<SecretString> {
+    let secret_decrypted_bytes = decrypt_symmetric_to_bytes(secret_passcode_32bytes, plain_encrypted_string)?;
+    let secret_decrypted_string = SecretString::from(String::from_utf8(secret_decrypted_bytes)?);
+    Ok(secret_decrypted_string)
+}
+
+/// Encrypts symmetrically secret_bytes_to_encrypt with secret_passcode_32bytes.
+///
+/// Consumes the secret_passcode_32bytes and secret_bytes_to_encrypt.  
+/// Returns the plain_encrypted_string, it is not a secret anymore.  
+pub(crate) fn encrypt_symmetric_from_bytes(
+    secret_passcode_32bytes: SecretBox<[u8; 32]>,
+    secret_bytes_to_encrypt: Vec<u8>,
+) -> anyhow::Result<String> {
     // nonce is salt
     let nonce = <aes_gcm::Aes256Gcm as aes_gcm::AeadCore>::generate_nonce(&mut aes_gcm::aead::OsRng);
     let cipher_text_encrypted = aes_gcm::aead::Aead::encrypt(
         // cipher_secret is the true passcode, here I don't know how to use secrecy, because the type has not the trait Zeroize
         &<aes_gcm::Aes256Gcm as aes_gcm::KeyInit>::new(secret_passcode_32bytes.expose_secret().into()),
         &nonce,
-        secret_string_to_encrypt.expose_secret().as_bytes(),
+        secret_bytes_to_encrypt.as_slice(),
     )
     .map_err(|err| anyhow::anyhow!(err))?;
 
@@ -314,11 +343,11 @@ pub(crate) fn encrypt_symmetric(
 /// Decrypts plain_encrypted_string with secret_passcode_32bytes.
 ///
 /// Consumes secret_passcode_32bytes and encrypted_string.  
-/// Returns the secret_decrypted_string.  
-pub(crate) fn decrypt_symmetric(
+/// Returns the secret_decrypted_bytes.  
+pub(crate) fn decrypt_symmetric_to_bytes(
     secret_passcode_32bytes: SecretBox<[u8; 32]>,
     plain_encrypted_string: String,
-) -> anyhow::Result<SecretString> {
+) -> anyhow::Result<Vec<u8>> {
     let encrypted_bytes = <base64ct::Base64 as base64ct::Encoding>::decode_vec(&plain_encrypted_string)?;
     // nonce is salt
     let nonce = rsa::sha2::digest::generic_array::GenericArray::from_slice(&encrypted_bytes[..12]);
@@ -332,8 +361,7 @@ pub(crate) fn decrypt_symmetric(
     )
     .map_err(|err| anyhow::anyhow!(err))?;
 
-    let secret_decrypted_string = SecretString::from(String::from_utf8(secret_decrypted_bytes)?);
-
-    Ok(secret_decrypted_string)
+    Ok(secret_decrypted_bytes)
 }
+
 // endregion: symmetrical encrypt and decrypt
