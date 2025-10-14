@@ -6,7 +6,7 @@
 [//]: # (auto_cargo_toml_to_md start)
 
 **Use SSH keys, Ed22519, X25519 and GCM to encode and decode messages and files**  
-***version: 0.0.59 date: 2025-10-14 author: [bestia.dev](https://bestia.dev) repository: [GitHub](https://github.com/bestia-dev/msg_enc_dec)***
+***version: 0.0.60 date: 2025-10-14 author: [bestia.dev](https://bestia.dev) repository: [GitHub](https://github.com/bestia-dev/msg_enc_dec)***
 
  ![maintained](https://img.shields.io/badge/maintained-green)
  ![work-in-progress](https://img.shields.io/badge/work_in_progress-yellow)
@@ -19,9 +19,9 @@
  ![msg_enc_dec](https://bestia.dev/webpage_hit_counter/get_svg_image/779107454.svg)
 
 [//]: # (auto_lines_of_code start)
-[![Lines in Rust code](https://img.shields.io/badge/Lines_in_Rust-638-green.svg)](https://github.com/bestia-dev-work-in-progress/msg_enc_dec/)
-[![Lines in Doc comments](https://img.shields.io/badge/Lines_in_Doc_comments-92-blue.svg)](https://github.com/bestia-dev-work-in-progress/msg_enc_dec/)
-[![Lines in Comments](https://img.shields.io/badge/Lines_in_comments-79-purple.svg)](https://github.com/bestia-dev-work-in-progress/msg_enc_dec/)
+[![Lines in Rust code](https://img.shields.io/badge/Lines_in_Rust-601-green.svg)](https://github.com/bestia-dev-work-in-progress/msg_enc_dec/)
+[![Lines in Doc comments](https://img.shields.io/badge/Lines_in_Doc_comments-91-blue.svg)](https://github.com/bestia-dev-work-in-progress/msg_enc_dec/)
+[![Lines in Comments](https://img.shields.io/badge/Lines_in_comments-77-purple.svg)](https://github.com/bestia-dev-work-in-progress/msg_enc_dec/)
 [![Lines in examples](https://img.shields.io/badge/Lines_in_examples-0-yellow.svg)](https://github.com/bestia-dev-work-in-progress/msg_enc_dec/)
 [![Lines in tests](https://img.shields.io/badge/Lines_in_tests-0-orange.svg)](https://github.com/bestia-dev-work-in-progress/msg_enc_dec/)
 

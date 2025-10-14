@@ -30,6 +30,7 @@ use crossplatform_path::CrossPathBuf;
 
 // import trait
 use secrecy::{ExposeSecret, SecretBox, SecretString};
+#[allow(unused_imports)]
 use tracing::{debug, error, info};
 
 #[derive(serde::Deserialize, serde::Serialize)]
@@ -49,7 +50,7 @@ pub(crate) struct EncryptedTextWithMetadata {
     pub(crate) plain_encrypted_text: String,
 }
 
-///main returns ExitCode
+/// Function main() returns ExitCode.
 fn main() -> std::process::ExitCode {
     match main_returns_anyhow_result() {
         Err(err) => {
@@ -61,7 +62,7 @@ fn main() -> std::process::ExitCode {
     }
 }
 
-/// main() returns anyhow::Result
+/// Function main() returns anyhow::Result.
 fn main_returns_anyhow_result() -> anyhow::Result<()> {
     tracing_init()?;
     msg_enc_dec_config_initialize()?;
@@ -97,8 +98,6 @@ fn main_returns_anyhow_result() -> anyhow::Result<()> {
     }
     Ok(())
 }
-
-// region: general functions
 
 /// Initialize tracing to file logs/automation_tasks_rs.log
 ///
@@ -138,8 +137,6 @@ pub fn tracing_init() -> anyhow::Result<()> {
     Ok(())
 }
 
-// endregion: general functions
-
 /// Application state (static) is initialized only once in the main() function.
 ///
 /// And then is accessible all over the code.
@@ -154,11 +151,11 @@ fn msg_enc_dec_config_initialize() -> anyhow::Result<()> {
     Ok(())
 }
 
-/// Print help on the terminal.
+/// Print help to the terminal.
 fn print_help() -> anyhow::Result<()> {
     println!(
         r#"
-  {YELLOW}Welcome to msg_enc_dec CLI{RESET}
+  {YELLOW}Welcome to msg_enc_dec CLI {RESET}
 
   Use SSH keys, Ed22519, X25519 and GCM to encode and decode messages and files.
   Use ssh private key Ed22519 to encrypt and save locally the shared secret token.
@@ -166,12 +163,12 @@ fn print_help() -> anyhow::Result<()> {
   for a secure communication between two users.
 
   This is the help for this program.
-{GREEN}msg_enc_dec --help{RESET}
+{GREEN}msg_enc_dec --help {RESET}
   
-  register completion for msg_enc_dec
-{GREEN}msg_enc_dec activate_completion{RESET}
+  Activate bash completion for msg_enc_dec.
+{GREEN}msg_enc_dec activate_completion {RESET}
 
-  {YELLOW}INITIALIZATION{RESET}
+  {YELLOW}INITIALIZATION {RESET}
 
   Do it only once. Create your ssh key if you don't have it already. 
   Give it a good passphrase and remember it. 
@@ -180,10 +177,10 @@ fn print_help() -> anyhow::Result<()> {
   This ssh key will be used to save locally the secret session token for the communication.
 {GREEN}msg_enc_dec create_ssh_key {RESET}
 
-  {YELLOW}HANDSHAKE{RESET}
+  {YELLOW}HANDSHAKE {RESET}
 
   You can use ssh-agent to type the passphrase of the ssh private key only once for one hour.
-{GREEN}ssh-add -t 1h msg_enc_dec_ssh_1{RESET}
+{GREEN}ssh-add -t 1h msg_enc_dec_ssh_1 {RESET}
 
   Create a new static key-pair X25519 and send the public key to the other party. 
   It is not a secret. You can use any communication available: email, whatsapp, messenger, sms,...
@@ -193,23 +190,24 @@ fn print_help() -> anyhow::Result<()> {
   Save the encrypted shared secret for later use.
 {GREEN}msg_enc_dec receive_public_key {RESET}
 
-  {YELLOW}COMMUNICATION{RESET}
+  {YELLOW}COMMUNICATION {RESET}
 
   Encrypt message and send the encrypted text.
 {GREEN}msg_enc_dec message_encrypt {RESET}
   Decrypt the received message.
 {GREEN}msg_enc_dec message_decrypt {RESET}
   Encrypt file and send the encrypted file.
-{GREEN}msg_enc_dec file_encrypt {RESET}
+{GREEN}msg_enc_dec file_encrypt file_name {RESET}
   Decrypt the received file.
-{GREEN}msg_enc_dec file_decrypt {RESET}
+{GREEN}msg_enc_dec file_decrypt file_name{RESET}
 
-  {YELLOW}© 2025 bestia.dev  MIT License github.com/bestia-dev/msg_enc_dec{RESET}
+  {YELLOW}© 2025 bestia.dev  MIT License github.com/bestia-dev/msg_enc_dec {RESET}
 "#
     );
     Ok(())
 }
 
+/// Activate completion with the bash command complete.
 fn activate_completion() -> anyhow::Result<()> {
     println!("Register completion for msg_enc_dec.");
     println!("complete -C msg_enc_dec msg_enc_dec");
@@ -288,7 +286,9 @@ fn send_public_key() -> anyhow::Result<()> {
     let static_secret: x25519_dalek::StaticSecret = x25519_dalek::StaticSecret::random();
 
     // Save the static secret encrypted into local folder.
-    encrypt_and_save_file(static_secret.to_bytes(), "static_secret")?;
+    let private_key_file_name = get_private_key_file_name()?;
+    let encrypted_secret_file_path = CrossPathBuf::new("static_secret.enc")?;
+    encrypt_and_save_file(&private_key_file_name, static_secret.to_bytes(), &encrypted_secret_file_path)?;
 
     // Send the public key to the other party.
     let public_key = x25519_dalek::PublicKey::from(&static_secret);
@@ -303,19 +303,21 @@ fn send_public_key() -> anyhow::Result<()> {
     Ok(())
 }
 
-/// Save the secret bytes encrypted into local folder.
-fn encrypt_and_save_file(secret_bytes: [u8; 32], extension: &str) -> Result<(), anyhow::Error> {
-    let private_key_file_name = &MSG_ENC_DEC_CONFIG
-        .get()
-        .context("MSG_ENC_DEC_CONFIG is None")?
-        .msg_enc_dec_private_key_file_name;
+/// Save the secret bytes symmetrically encrypted into a file.
+///
+/// Use the private key to sign the random seed. The random seed is saved as plain inside the file.
+/// The file is bas64 only to masquerade it a little bit.
+fn encrypt_and_save_file(
+    private_key_file_name: &str,
+    secret_bytes: [u8; 32],
+    encrypted_secret_file_path: &CrossPathBuf,
+) -> Result<(), anyhow::Error> {
     let (plain_seed_bytes_32bytes, plain_seed_string) = ende::random_seed_32bytes_and_string()?;
-    let private_key_path_struct = ende::PathStructInSshFolder::new(private_key_file_name.to_string())?;
+    let private_key_path = CrossPathBuf::new(&format!("~/.ssh/{private_key_file_name}"))?;
     let secret_passcode_32bytes: SecretBox<[u8; 32]> =
-        ende::sign_seed_with_ssh_agent_or_private_key_file(&private_key_path_struct, plain_seed_bytes_32bytes)?;
+        ende::sign_seed_with_ssh_agent_or_private_key_file(&private_key_path, plain_seed_bytes_32bytes)?;
     let secret_string = secrecy::SecretString::from(ende::encode64_from_32bytes_to_string(secret_bytes)?);
     let plain_encrypted_text = ende::encrypt_symmetric(secret_passcode_32bytes, secret_string)?;
-    let encrypted_secret_file_path = CrossPathBuf::new(&format!("{private_key_file_name}.{extension}"))?;
     let json_struct = EncryptedTextWithMetadata {
         plain_seed_string,
         plain_encrypted_text,
@@ -329,17 +331,21 @@ fn encrypt_and_save_file(secret_bytes: [u8; 32], extension: &str) -> Result<(), 
 fn receive_public_key() -> anyhow::Result<()> {
     let other_public_key = inquire::Text::new(&format!("{BLUE}Copy the public key received from the other party:{RESET}")).prompt()?;
     let other_public_key = ende::decode64_from_string_to_32bytes(&other_public_key)?;
-    let other_public_key = x25519_dalek::PublicKey::try_from(other_public_key)?;
+    let other_public_key = x25519_dalek::PublicKey::from(other_public_key);
 
     // load and decrypt the static secret
-    let static_secret_bytes = load_and_decrypt("static_secret")?;
+    let private_key_file_name = get_private_key_file_name()?;
+    let enc_file_path = CrossPathBuf::new("static_secret.enc")?;
+    let static_secret_bytes = load_and_decrypt(&private_key_file_name, &enc_file_path)?;
     let static_secret = x25519_dalek::StaticSecret::try_from(static_secret_bytes)?;
 
     // calculate shared secret
     let shared_secret = static_secret.diffie_hellman(&other_public_key);
 
     // save encrypted shared secret
-    encrypt_and_save_file(shared_secret.to_bytes(), "shared_secret")?;
+    let private_key_file_name = get_private_key_file_name()?;
+    let encrypted_secret_file_path = CrossPathBuf::new("shared_secret.enc")?;
+    encrypt_and_save_file(&private_key_file_name, shared_secret.to_bytes(), &encrypted_secret_file_path)?;
 
     // for debugging I can write the encrypted session token that is created
     // let session_token_enc_path = CrossPathBuf::new("enc_session_token_1.txt")?;
@@ -355,27 +361,33 @@ fn receive_public_key() -> anyhow::Result<()> {
     Ok(())
 }
 
-// load and decrypt secret
-fn load_and_decrypt(extension: &str) -> Result<[u8; 32], anyhow::Error> {
-    let private_key_file_name = &MSG_ENC_DEC_CONFIG
-        .get()
-        .context("MSG_ENC_DEC_CONFIG is None")?
-        .msg_enc_dec_private_key_file_name;
-    let encrypted_static_secret_file_path = CrossPathBuf::new(&format!("{private_key_file_name}.{extension}"))?;
-    let encrypted_static_secret_file_string = encrypted_static_secret_file_path.read_to_string()?;
-    let json_struct: EncryptedTextWithMetadata = serde_json::from_str(&encrypted_static_secret_file_string)?;
+// Load and decrypt secret.
+fn load_and_decrypt(private_key_file_name: &str, encrypted_secret_file_path: &CrossPathBuf) -> Result<[u8; 32], anyhow::Error> {
+    let encrypted_secret_file_string = encrypted_secret_file_path.read_to_string()?;
+    let json_struct: EncryptedTextWithMetadata = serde_json::from_str(&encrypted_secret_file_string)?;
     let plain_seed_bytes_32bytes = ende::decode64_from_string_to_32bytes(&json_struct.plain_seed_string)?;
-    let private_key_path_struct = ende::PathStructInSshFolder::new(private_key_file_name.to_string())?;
+    let private_key_path = CrossPathBuf::new(&format!("~/.ssh/{private_key_file_name}"))?;
     let secret_passcode_32bytes: SecretBox<[u8; 32]> =
-        ende::sign_seed_with_ssh_agent_or_private_key_file(&private_key_path_struct, plain_seed_bytes_32bytes)?;
+        ende::sign_seed_with_ssh_agent_or_private_key_file(&private_key_path, plain_seed_bytes_32bytes)?;
     let secret_string = ende::decrypt_symmetric(secret_passcode_32bytes, json_struct.plain_encrypted_text)?;
     let secret_bytes = ende::decode64_from_string_to_32bytes(secret_string.expose_secret())?;
     Ok(secret_bytes)
 }
 
-/// encrypt message from terminal
+/// Get private key file name from global variable.
+fn get_private_key_file_name() -> Result<String, anyhow::Error> {
+    let private_key_file_name = &MSG_ENC_DEC_CONFIG
+        .get()
+        .context("MSG_ENC_DEC_CONFIG is None")?
+        .msg_enc_dec_private_key_file_name;
+    Ok(private_key_file_name.to_string())
+}
+
+/// Encrypt message from terminal.
 fn message_encrypt() -> anyhow::Result<()> {
-    let shared_secret_bytes = load_and_decrypt("shared_secret")?;
+    let private_key_file_name = get_private_key_file_name()?;
+    let encrypted_secret_file_path = CrossPathBuf::new("shared_secret.enc")?;
+    let shared_secret_bytes = load_and_decrypt(&private_key_file_name, &encrypted_secret_file_path)?;
     // just for debug
     // let shared_secret_string = ende::encode64_from_32bytes_to_string(shared_secret_bytes)?;
     //println!("{shared_secret_string}");
@@ -390,9 +402,11 @@ fn message_encrypt() -> anyhow::Result<()> {
     Ok(())
 }
 
-/// decrypt message from terminal
+/// Decrypt message from terminal.
 fn message_decrypt() -> anyhow::Result<()> {
-    let shared_secret_bytes = load_and_decrypt("shared_secret")?;
+    let private_key_file_name = get_private_key_file_name()?;
+    let encrypted_secret_file_path = CrossPathBuf::new("shared_secret.enc")?;
+    let shared_secret_bytes = load_and_decrypt(&private_key_file_name, &encrypted_secret_file_path)?;
     // just for debug
     // let shared_secret_string = ende::encode64_from_32bytes_to_string(shared_secret_bytes)?;
     //println!("{shared_secret_string}");
@@ -406,9 +420,11 @@ fn message_decrypt() -> anyhow::Result<()> {
     Ok(())
 }
 
-/// encrypt file
+/// Encrypt file.
 fn file_encrypt(file_name: &str) -> anyhow::Result<()> {
-    let shared_secret_bytes = load_and_decrypt("shared_secret")?;
+    let private_key_file_name = get_private_key_file_name()?;
+    let encrypted_secret_file_path = CrossPathBuf::new("shared_secret.enc")?;
+    let shared_secret_bytes = load_and_decrypt(&private_key_file_name, &encrypted_secret_file_path)?;
     // just for debug
     // let shared_secret_string = ende::encode64_from_32bytes_to_string(shared_secret_bytes)?;
     //println!("{shared_secret_string}");
@@ -421,9 +437,11 @@ fn file_encrypt(file_name: &str) -> anyhow::Result<()> {
     Ok(())
 }
 
-/// decrypt file
+/// Decrypt file.
 fn file_decrypt(file_name: &str) -> anyhow::Result<()> {
-    let shared_secret_bytes = load_and_decrypt("shared_secret")?;
+    let private_key_file_name = get_private_key_file_name()?;
+    let encrypted_secret_file_path = CrossPathBuf::new("shared_secret.enc")?;
+    let shared_secret_bytes = load_and_decrypt(&private_key_file_name, &encrypted_secret_file_path)?;
     // just for debug
     // let shared_secret_string = ende::encode64_from_32bytes_to_string(shared_secret_bytes)?;
     //println!("{shared_secret_string}");
