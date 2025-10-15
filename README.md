@@ -32,15 +32,16 @@ My projects on GitHub are more like a tutorial than a finished product: [bestia-
 
 ## ⚠️ Security Warning
 
-The implementation contained in this crate has never been independently audited!
-
+The implementation contained in this crate has never been independently audited!  
 USE AT YOUR OWN RISK!
 
 ## Try it
 
 For encrypted communication between two parties, both must use msg_enc_dec.  
 Install msg_enc_dec from GitHub.  
-It is preferred to use Rust locally to build the program, so you know exactly the source code.
+It is preferred to use Rust locally to build the program, so you know exactly the source code.  
+You can also download the executable binaries from this repository Github Releases, but there you have no way to know exactly what source code has been used.  
+On Linux (I use Debian inside WSL on Windows):  
 
 ```bash
 cd ~/rustprojects
@@ -54,6 +55,28 @@ msg_enc_dec --help
 ![image_01](images/image_01.png)
 
 ![image_02](images/image_02.png)
+
+## Windows git-bash
+
+TODO: Let's try install rust in Windows git-bash and build msg_enc_dec there.
+Git-bash is installed when I install git for Windows from <https://git-scm.com/downloads/win>.  
+Download and run rustup-ini.exe from <https://rustup.rs>.  
+Rust requires a linker and Windows API libraries but they don't seem to be available.
+Choose:  
+3) Don't install the prerequisites  
+   (if you're targeting the GNU ABI).  
+
+1) Proceed with standard installation (default - just press enter)
+ This is dependent on Microsoft Visual Studio. We don't want that.
+
+2) Customize installation
+  
+      
+In git bash run
+
+```bash
+
+```
 
 ## Development details
 
