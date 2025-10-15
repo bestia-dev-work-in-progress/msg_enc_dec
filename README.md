@@ -59,22 +59,35 @@ msg_enc_dec --help
 ## Windows git-bash
 
 TODO: Let's try install rust in Windows git-bash and build msg_enc_dec there.
-Git-bash is installed when I install git for Windows from <https://git-scm.com/downloads/win>.  
-Download and run rustup-ini.exe from <https://rustup.rs>.  
+Git-bash is installed when I installed 'git for Windows' from <https://git-scm.com/downloads/win>.  
+In the browser download rustup-ini.exe from <https://rustup.rs> and then run it as normal user.
+Rustup, cargo and other programs will be installed in the ~/.cargo and ~/.rustup folders.  
+The installation asks to choose the toolchain, we will not use the default 'x86_64-pc-windows-msv', but the GNU toolchain 'x86_64-pc-windows-gnu'.
+
 Rust requires a linker and Windows API libraries but they don't seem to be available.
 Choose:  
 3) Don't install the prerequisites  
    (if you're targeting the GNU ABI).  
 
-1) Proceed with standard installation (default - just press enter)
- This is dependent on Microsoft Visual Studio. We don't want that.
-
+Then choose:
 2) Customize installation
-  
+Default host triple? [x86_64-pc-windows-msvc]
+Copy this toolchain instead:
+x86_64-pc-windows-gnu
+Choose stable.
+Profile (which tools and data to install)? 
+default
+Modify PATH variable? 
+n
+1) Proceed with selected options (default - just press enter)
+
+
       
 In git bash run
 
 ```bash
+cd ~/git-bash/rustprojects
+git clone git@github.com:bestia-dev/msg_enc_dec.git
 
 ```
 
