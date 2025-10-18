@@ -511,7 +511,9 @@ fn encrypt_and_save_file(
 
 /// Receive public key, calculate shared secret, encrypt and store for later use.
 fn receive_public_key() -> anyhow::Result<()> {
-    let other_public_key = inquire::Text::new(&format!("{BLUE}Copy the public key received from the other party:{RESET}")).prompt()?;
+    let other_public_key: String = dialoguer::Input::new()
+        .with_prompt(format!("{BLUE}Copy the public key received from the other party:{RESET}"))
+        .interact_text()?;
     let other_public_key = ende::decode64_from_string_to_32bytes(&other_public_key)?;
     let other_public_key = x25519_dalek::PublicKey::from(other_public_key);
 
@@ -575,7 +577,9 @@ fn message_encrypt() -> anyhow::Result<()> {
     //println!("{shared_secret_string}");
     let shared_secret = SecretBox::new(Box::new(shared_secret_bytes));
 
-    let secret_message = inquire::Text::new(&format!("{BLUE}Write secret message to encrypt.{RESET}")).prompt()?;
+    let secret_message: String = dialoguer::Input::new()
+        .with_prompt(format!("{BLUE}Write secret message to encrypt.{RESET}"))
+        .interact_text()?;
     let secret_message = SecretString::from(secret_message);
     // encrypt secret message with symmetric encryption
     let encrypted_message = ende::encrypt_symmetric(shared_secret, secret_message)?;
@@ -594,7 +598,9 @@ fn message_decrypt() -> anyhow::Result<()> {
     //println!("{shared_secret_string}");
     let shared_secret = SecretBox::new(Box::new(shared_secret_bytes));
 
-    let encrypted_message = inquire::Text::new(&format!("{BLUE}Write encrypted message to decrypt.{RESET}")).prompt()?;
+    let encrypted_message: String = dialoguer::Input::new()
+        .with_prompt(format!("{BLUE}Write encrypted message to decrypt.{RESET}"))
+        .interact_text()?;
     // decrypt secret message with symmetric encryption
     let encrypted_message = ende::decrypt_symmetric(shared_secret, encrypted_message)?;
     println!("Decrypted message:");

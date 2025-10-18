@@ -190,12 +190,7 @@ fn sign_seed_with_private_key_file(
         println!();
         println!("{BLUE}Enter the passphrase for the SSH private key:{RESET}");
 
-        let secret_passphrase = SecretString::from(
-            inquire::Password::new("")
-                .without_confirmation()
-                .with_display_mode(inquire::PasswordDisplayMode::Masked)
-                .prompt()?,
-        );
+        let secret_passphrase = SecretString::from(dialoguer::Password::new().with_prompt("").interact()?.to_string());
         if secret_passphrase.expose_secret().is_empty() {
             anyhow::bail!("Passphrase empty");
         }
