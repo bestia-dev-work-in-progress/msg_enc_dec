@@ -254,7 +254,7 @@ fn main_returns_anyhow_result() -> anyhow::Result<()> {
     match std::env::args().nth(1).as_deref() {
         None | Some("--help") | Some("-h") => print_help()?,
         // Register completion for msg_enc_dec  with the shell command 'complete -C'.
-        Some("activate_completion") => activate_completion()?,
+        Some("register_completion") => register_completion()?,
         // When registered completion calls msg_enc_dec, the first argument is the path of the program.
         // Completion will react only on 'msg_enc_dec' as first word. Not ./msg_enc_dec or ~/msg_enc_dec,...
         Some("msg_enc_dec") => msg_enc_dec_completion()?,
@@ -365,7 +365,7 @@ fn print_help() -> anyhow::Result<()> {
 {GREEN}msg_enc_dec --help {RESET}
   
   Activate bash completion for msg_enc_dec.
-{GREEN}msg_enc_dec activate_completion {RESET}
+{GREEN}msg_enc_dec register_completion {RESET}
 
   {YELLOW}INITIALIZATION {RESET}
 
@@ -408,7 +408,7 @@ fn print_help() -> anyhow::Result<()> {
 }
 
 /// Activate completion with the bash command complete.
-fn activate_completion() -> anyhow::Result<()> {
+fn register_completion() -> anyhow::Result<()> {
     println!("Run this command manually in bash to register ");
     println!("completion for msg_enc_dec in this bash session:");
     println!("{GREEN}complete -C msg_enc_dec msg_enc_dec{RESET}");
@@ -422,7 +422,6 @@ fn msg_enc_dec_completion() -> anyhow::Result<()> {
     let word_being_completed = args[2].as_str();
 
     let sub_commands = vec![
-        "activate_completion",
         "create_ssh_key",
         "send_public_key",
         "receive_public_key",
@@ -477,7 +476,7 @@ fn send_public_key() -> anyhow::Result<()> {
     let static_secret: x25519_dalek::StaticSecret = x25519_dalek::StaticSecret::random();
 
     // Save the static secret encrypted into local folder.
-    let private_key_file_name = get_private_key_file_name()?;
+    let private_key_file_name = global_private_key_file_name()?;
     let encrypted_secret_file_path = CrossPathBuf::new("static_secret.enc")?;
     encrypt_and_save_file(&private_key_file_name, static_secret.to_bytes(), &encrypted_secret_file_path)?;
 
@@ -527,7 +526,7 @@ fn receive_public_key() -> anyhow::Result<()> {
     let other_public_key = x25519_dalek::PublicKey::from(other_public_key);
 
     // load and decrypt the static secret
-    let private_key_file_name = get_private_key_file_name()?;
+    let private_key_file_name = global_private_key_file_name()?;
     let enc_file_path = CrossPathBuf::new("static_secret.enc")?;
     let static_secret_bytes = load_and_decrypt(&private_key_file_name, &enc_file_path)?;
     let static_secret = x25519_dalek::StaticSecret::from(static_secret_bytes);
@@ -536,7 +535,7 @@ fn receive_public_key() -> anyhow::Result<()> {
     let shared_secret = static_secret.diffie_hellman(&other_public_key);
 
     // save encrypted shared secret
-    let private_key_file_name = get_private_key_file_name()?;
+    let private_key_file_name = global_private_key_file_name()?;
     let encrypted_secret_file_path = CrossPathBuf::new("shared_secret.enc")?;
     encrypt_and_save_file(&private_key_file_name, shared_secret.to_bytes(), &encrypted_secret_file_path)?;
 
@@ -568,7 +567,7 @@ fn load_and_decrypt(private_key_file_name: &str, encrypted_secret_file_path: &Cr
 }
 
 /// Get private key file name from global variable.
-fn get_private_key_file_name() -> Result<String, anyhow::Error> {
+fn global_private_key_file_name() -> Result<String, anyhow::Error> {
     let private_key_file_name = &MSG_ENC_DEC_CONFIG
         .get()
         .context("MSG_ENC_DEC_CONFIG is None")?
@@ -578,7 +577,7 @@ fn get_private_key_file_name() -> Result<String, anyhow::Error> {
 
 /// Encrypt message from terminal.
 fn message_encrypt() -> anyhow::Result<()> {
-    let private_key_file_name = get_private_key_file_name()?;
+    let private_key_file_name = global_private_key_file_name()?;
     let encrypted_secret_file_path = CrossPathBuf::new("shared_secret.enc")?;
     let shared_secret_bytes = load_and_decrypt(&private_key_file_name, &encrypted_secret_file_path)?;
     // just for debug
@@ -599,7 +598,7 @@ fn message_encrypt() -> anyhow::Result<()> {
 
 /// Decrypt message from terminal.
 fn message_decrypt() -> anyhow::Result<()> {
-    let private_key_file_name = get_private_key_file_name()?;
+    let private_key_file_name = global_private_key_file_name()?;
     let encrypted_secret_file_path = CrossPathBuf::new("shared_secret.enc")?;
     let shared_secret_bytes = load_and_decrypt(&private_key_file_name, &encrypted_secret_file_path)?;
     // just for debug
@@ -619,7 +618,7 @@ fn message_decrypt() -> anyhow::Result<()> {
 
 /// Encrypt file.
 fn file_encrypt(file_name: &str) -> anyhow::Result<()> {
-    let private_key_file_name = get_private_key_file_name()?;
+    let private_key_file_name = global_private_key_file_name()?;
     let encrypted_secret_file_path = CrossPathBuf::new("shared_secret.enc")?;
     let shared_secret_bytes = load_and_decrypt(&private_key_file_name, &encrypted_secret_file_path)?;
     // just for debug
@@ -629,14 +628,14 @@ fn file_encrypt(file_name: &str) -> anyhow::Result<()> {
     println!("Read file: {file_name}");
     let vec_u8 = std::fs::read(file_name)?;
     let encrypted = ende::encrypt_symmetric_from_bytes(shared_secret, vec_u8)?;
-    println!("Save encrypted file: {file_name}.enc");
+    println!("Saved encrypted file: {file_name}.enc");
     std::fs::write(format!("{file_name}.enc"), encrypted)?;
     Ok(())
 }
 
 /// Decrypt file.
 fn file_decrypt(file_name: &str) -> anyhow::Result<()> {
-    let private_key_file_name = get_private_key_file_name()?;
+    let private_key_file_name = global_private_key_file_name()?;
     let encrypted_secret_file_path = CrossPathBuf::new("shared_secret.enc")?;
     let shared_secret_bytes = load_and_decrypt(&private_key_file_name, &encrypted_secret_file_path)?;
     // just for debug
@@ -647,7 +646,7 @@ fn file_decrypt(file_name: &str) -> anyhow::Result<()> {
     let encrypted_file = std::fs::read_to_string(format!("{file_name}.enc"))?;
     // decrypt secret message with symmetric encryption
     let decrypted_file = ende::decrypt_symmetric_to_bytes(shared_secret, encrypted_file)?;
-    println!("Save decrypted file: {file_name}");
+    println!("Saved decrypted file: {file_name}");
     std::fs::write(file_name, decrypted_file)?;
     Ok(())
 }
