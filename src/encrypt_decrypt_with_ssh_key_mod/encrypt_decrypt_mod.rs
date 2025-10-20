@@ -52,7 +52,7 @@ pub(crate) fn shorten_vec_bytes_to_32bytes(vec_u8: Vec<u8>) -> anyhow::Result<[u
     Ok(secret_passcode_32bytes)
 }
 
-// region: seed encode and decode - string and bytes
+// region: seed encrypt and decrypt - string and bytes
 
 /// Decode Base64UrlUnpadded from string to 32bytes.
 pub(crate) fn encode64_from_32bytes_to_string(bytes_32bytes: [u8; 32]) -> anyhow::Result<String> {
@@ -87,7 +87,7 @@ pub(crate) fn decode64_from_string_to_string(string_to_decode: &str) -> anyhow::
     Ok(decoded_string)
 }
 
-// endregion: seed encode and decode - string and bytes
+// endregion: seed encrypt and decrypt - string and bytes
 
 // region: sign the seed with ssh-agent or private key
 

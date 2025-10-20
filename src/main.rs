@@ -3,7 +3,7 @@
 // region: auto_md_to_doc_comments include README.md A //!
 //! # msg_enc_dec
 //!
-//! **Use SSH keys, Ed22519, X25519 and GCM to encode and decode messages and files for communication**  
+//! **Use SSH keys, Ed22519, X25519 and GCM to encrypt and decrypt messages and files for communication**  
 //! ***version: 1.0.2 date: 2025-10-14 author: [bestia.dev](https://bestia.dev) repository: [GitHub](https://github.com/bestia-dev/msg_enc_dec)***
 //!
 //!  ![maintained](https://img.shields.io/badge/maintained-green)
@@ -142,7 +142,7 @@
 //!
 //!
 //!
-//! ## Use SSH keys, Ed22519, X25519 and GCM to encode and decode messages and files for communication
+//! ## Use SSH keys, Ed22519, X25519 and GCM to encrypt and decrypt messages and files for communication
 //!
 //! With one SSH private key, we can store many secret tokens.
 //!
@@ -214,14 +214,17 @@ use secrecy::{ExposeSecret, SecretBox, SecretString};
 #[allow(unused_imports)]
 use tracing::{debug, error, info};
 
-#[derive(serde::Deserialize, serde::Serialize)]
+#[derive(serde::Deserialize, serde::Serialize, Debug)]
 pub struct MsgEncDecConfig {
     pub msg_enc_dec_private_key_file_name: String,
 }
 
-/// Application state (static) is initialized only once in the main() function.
+/// Path of the config file
+pub static CONFIG_PATH: &str = "msg_enc_dec_config.json";
+
+/// Application state (static OnceLock) is initialized only once in the main() function.
 ///
-/// And then is accessible all over the code.
+/// And then is read/write accessible all over the code. Thread safe.
 pub static MSG_ENC_DEC_CONFIG: std::sync::OnceLock<MsgEncDecConfig> = std::sync::OnceLock::new();
 
 /// Struct that represents the json data saved in the '*.enc' file.
@@ -253,6 +256,7 @@ fn main_returns_anyhow_result() -> anyhow::Result<()> {
         // Register completion for msg_enc_dec  with the shell command 'complete -C'.
         Some("activate_completion") => activate_completion()?,
         // When registered completion calls msg_enc_dec, the first argument is the path of the program.
+        // Completion will react only on 'msg_enc_dec' as first word. Not ./msg_enc_dec or ~/msg_enc_dec,...
         Some("msg_enc_dec") => msg_enc_dec_completion()?,
         Some("create_ssh_key") => create_ssh_key()?,
         Some("send_public_key") => send_public_key()?,
@@ -326,9 +330,23 @@ fn msg_enc_dec_config_initialize() -> anyhow::Result<()> {
         return Ok(());
     }
 
-    let msg_enc_dec_config_json = std::fs::read_to_string("msg_enc_dec_config.json")?;
+    let config_path = CrossPathBuf::new(CONFIG_PATH)?;
+    if !config_path.exists() {
+        config_path.write_str_to_file(
+            r#"
+{
+"msg_enc_dec_private_key_file_name":"msg_enc_dec_ssh_1"
+}   
+"#,
+        )?;
+    }
+
+    let msg_enc_dec_config_json = config_path.read_to_string()?;
     let msg_enc_dec_config: MsgEncDecConfig = serde_json::from_str(&msg_enc_dec_config_json)?;
-    let _ = MSG_ENC_DEC_CONFIG.set(msg_enc_dec_config);
+    MSG_ENC_DEC_CONFIG
+        .set(msg_enc_dec_config)
+        .expect("Static OnceLock should not error for set().");
+
     Ok(())
 }
 
@@ -338,9 +356,9 @@ fn print_help() -> anyhow::Result<()> {
         r#"
   {YELLOW}Welcome to msg_enc_dec CLI {RESET}
 
-  Use SSH keys, Ed22519, X25519 and GCM to encode and decode messages and files for communication.
+  Use SSH keys, Ed22519, X25519 and GCM to encrypt and decrypt messages and files for communication.
   Use ssh private key Ed22519 to encrypt and save locally the shared secret token.
-  Use symmetric encryption GCM to encode and decode messages and files
+  Use symmetric encryption GCM to encrypt and decrypt messages and files
   for secure communication between two users.
 
   This is the help for this program.
@@ -391,10 +409,10 @@ fn print_help() -> anyhow::Result<()> {
 
 /// Activate completion with the bash command complete.
 fn activate_completion() -> anyhow::Result<()> {
-    println!("Register completion for msg_enc_dec.");
-    println!("complete -C msg_enc_dec msg_enc_dec");
-    let shell_command = r#"complete -C msg_enc_dec msg_enc_dec "#;
-    let _status = std::process::Command::new("sh").arg("-c").arg(shell_command).spawn()?.wait()?;
+    println!("Run this command manually in bash to register ");
+    println!("completion for msg_enc_dec in this bash session:");
+    println!("{GREEN}complete -C msg_enc_dec msg_enc_dec{RESET}");
+    println!("If you want the completion to persist in future bash sessions, add the command to your ~/.bashrc file.");
     Ok(())
 }
 
@@ -436,15 +454,6 @@ pub fn completion_return_one_or_more_sub_commands(sub_commands: Vec<&str>, word_
 
 /// Create ssh key and config json.
 fn create_ssh_key() -> anyhow::Result<()> {
-    let config_path = CrossPathBuf::new("msg_enc_dec_config.json")?;
-    config_path.write_str_to_file(
-        r#"
-{
-"msg_enc_dec_private_key_file_name":"msg_enc_dec_ssh_1"
-}   
-"#,
-    )?;
-
     println!("  {YELLOW}Generate the ssh private/public key pair. {RESET}");
     println!("  {YELLOW}Give it a good passphrase and remember it. {RESET}");
     println!("  {YELLOW}Nobody can help you if you forget the passphrase. {RESET}");
@@ -512,7 +521,7 @@ fn encrypt_and_save_file(
 /// Receive public key, calculate shared secret, encrypt and store for later use.
 fn receive_public_key() -> anyhow::Result<()> {
     let other_public_key: String = dialoguer::Input::new()
-        .with_prompt(format!("{BLUE}Copy the public key received from the other party:{RESET}"))
+        .with_prompt(format!("{BLUE}Copy the public key received from the other party{RESET}"))
         .interact_text()?;
     let other_public_key = ende::decode64_from_string_to_32bytes(&other_public_key)?;
     let other_public_key = x25519_dalek::PublicKey::from(other_public_key);
@@ -578,7 +587,7 @@ fn message_encrypt() -> anyhow::Result<()> {
     let shared_secret = SecretBox::new(Box::new(shared_secret_bytes));
 
     let secret_message: String = dialoguer::Input::new()
-        .with_prompt(format!("{BLUE}Write secret message to encrypt.{RESET}"))
+        .with_prompt(format!("{BLUE}Write secret message to encrypt{RESET}"))
         .interact_text()?;
     let secret_message = SecretString::from(secret_message);
     // encrypt secret message with symmetric encryption
@@ -599,7 +608,7 @@ fn message_decrypt() -> anyhow::Result<()> {
     let shared_secret = SecretBox::new(Box::new(shared_secret_bytes));
 
     let encrypted_message: String = dialoguer::Input::new()
-        .with_prompt(format!("{BLUE}Write encrypted message to decrypt.{RESET}"))
+        .with_prompt(format!("{BLUE}Write encrypted message to decrypt{RESET}"))
         .interact_text()?;
     // decrypt secret message with symmetric encryption
     let encrypted_message = ende::decrypt_symmetric(shared_secret, encrypted_message)?;

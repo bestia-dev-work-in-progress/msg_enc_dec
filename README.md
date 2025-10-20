@@ -5,8 +5,8 @@
 
 [//]: # (auto_cargo_toml_to_md start)
 
-**Use SSH keys, Ed22519, X25519 and GCM to encode and decode messages and files for communication**  
-***version: 1.0.5 date: 2025-10-18 author: [bestia.dev](https://bestia.dev) repository: [GitHub](https://github.com/bestia-dev/msg_enc_dec)***
+**Use SSH keys, Ed22519, X25519 and GCM to encrypt and decrypt messages and files for communication**  
+***version: 1.0.8 date: 2025-10-20 author: [bestia.dev](https://bestia.dev) repository: [GitHub](https://github.com/bestia-dev/msg_enc_dec)***
 
  ![maintained](https://img.shields.io/badge/maintained-green)
  ![ready-for-use](https://img.shields.io/badge/ready_for_use-green)
@@ -19,9 +19,9 @@
  ![msg_enc_dec](https://bestia.dev/webpage_hit_counter/get_svg_image/124137175.svg)
 
 [//]: # (auto_lines_of_code start)
-[![Lines in Rust code](https://img.shields.io/badge/Lines_in_Rust-607-green.svg)](https://github.com/bestia-dev/msg_enc_dec/)
-[![Lines in Doc comments](https://img.shields.io/badge/Lines_in_Doc_comments-273-blue.svg)](https://github.com/bestia-dev/msg_enc_dec/)
-[![Lines in Comments](https://img.shields.io/badge/Lines_in_comments-77-purple.svg)](https://github.com/bestia-dev/msg_enc_dec/)
+[![Lines in Rust code](https://img.shields.io/badge/Lines_in_Rust-614-green.svg)](https://github.com/bestia-dev/msg_enc_dec/)
+[![Lines in Doc comments](https://img.shields.io/badge/Lines_in_Doc_comments-274-blue.svg)](https://github.com/bestia-dev/msg_enc_dec/)
+[![Lines in Comments](https://img.shields.io/badge/Lines_in_comments-78-purple.svg)](https://github.com/bestia-dev/msg_enc_dec/)
 [![Lines in examples](https://img.shields.io/badge/Lines_in_examples-0-yellow.svg)](https://github.com/bestia-dev/msg_enc_dec/)
 [![Lines in tests](https://img.shields.io/badge/Lines_in_tests-0-orange.svg)](https://github.com/bestia-dev/msg_enc_dec/)
 
@@ -40,14 +40,16 @@ USE AT YOUR OWN RISK!
 For encrypted communication between two parties, both parties must use msg_enc_dec.  
 Install msg_enc_dec from GitHub.  
 It is preferred to use Rust locally to build the program, so you know exactly the source code and you can review it.  
+I use the [CRUSTDE](https://github.com/CRUSTDE-ContainerizedRustDevEnv/crustde_cnt_img_pod) container to run Rust programs inside an isolated environment to not compromise my base operating system.  
 
 ## On Linux
 
-On Linux (I use Debian inside WSL on Windows):  
+Linux everywhere!  
+On Linux (I use Debian inside [WSL on Windows](https://github.com/CRUSTDE-ContainerizedRustDevEnv/crustde_cnt_img_pod)):  
 
 ```bash
 cd ~/rustprojects
-git clone git@github.com:bestia-dev-ready-for-use/msg_enc_dec.git
+git clone git@github.com:bestia-dev/msg_enc_dec.git
 code msg_enc_dec
 cargo auto release
 alias msg_enc_dec="./target/release/msg_enc_dec"
@@ -56,34 +58,6 @@ msg_enc_dec --help
 
 ![image_01](images/image_01.png)  
 ![image_02](images/image_02.png)
-
-## On Windows
-
-On Windows I use git-bash to have a bash terminal experience as much as possible similar to Linux bash.  
-Git-bash is installed when I installed `git for Windows` from <https://git-scm.com/downloads/win>.  
-In the browser download `rustup-ini.exe` from <https://rustup.rs> and then run it as normal user.  
-Rustup, cargo and other programs will be installed in the ~/.cargo and ~/.rustup folders in Windows.  
-The installation asks to choose the toolchain, I will not use the default `x86_64-pc-windows-msv`, but the GNU toolchain `x86_64-pc-windows-gnu`.
-
-The installer will ask some mysterious question and you should answer:
-
-- Don't install the prerequisites (if you're targeting the GNU ABI).
-- Customize installation
-- Default host triple? : `x86_64-pc-windows-gnu`
-- Choose stable.
-- Profile: default
-- Modify PATH variable: yes
-- Proceed with selected options: press enter
-
-In git bash run
-
-```bash
-mkdir -p ~/git-bash/rustprojects
-cd ~/git-bash/rustprojects
-git clone git@github.com:bestia-dev/msg_enc_dec.git
-cd msg_enc_dec
-cargo auto release
-```
 
 ## Development details
 
