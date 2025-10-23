@@ -1,6 +1,6 @@
 [package]
 name = "msg_enc_dec"
-version = "1.0.8"
+version = "1.0.17"
 description = "Use SSH keys, Ed22519, X25519 and GCM to encrypt and decrypt messages and files for communication"
 authors = ["bestia.dev"]
 homepage = "https://bestia.dev"
@@ -32,8 +32,7 @@ time = {version="0.3.39", features=["macros","local-offset"]}
 
 thiserror = "2.0.17"
 anyhow="1.0.97"
-# the last version of reqwest that builds in win-git-bah is 0.12.12
-reqwest={version="=0.12.12", features=["json","blocking"]}
+reqwest={version="0.12.24", default-features = false, features=["json","blocking", "rustls-tls"]}
 serde ={ version= "1.0.219", features=["std","derive"]}
 serde_json = "1.0.140"
 ssh-key = { version = "0.6.7", features = [ "rsa", "encryption"] }

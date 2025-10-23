@@ -4,8 +4,8 @@
 
 mod build_cli_bin_mod;
 mod build_cli_bin_win_mod;
-mod build_wasm_mod;
 mod build_lib_mod;
+mod build_wasm_mod;
 mod cargo_auto_github_api_mod;
 mod encrypt_decrypt_with_ssh_key_mod;
 mod generic_functions_mod;
@@ -70,8 +70,10 @@ fn match_arguments_and_call_tasks(mut args: std::env::Args) -> anyhow::Result<()
                     task_build()?;
                 } else if &task == "release" {
                     task_release()?;
-                    } else if &task == "win_release" {
+                } else if &task == "win_release" {
                     task_win_release()?;
+                } else if &task == "musl_release" {
+                    task_musl_release()?;
                 } else if &task == "doc" {
                     task_doc()?;
                 } else if &task == "test" {
@@ -102,6 +104,7 @@ fn print_help() -> anyhow::Result<()> {
 {GREEN}cargo auto build{RESET} - {YELLOW}builds the crate in debug mode, fmt, increment version{RESET}
 {GREEN}cargo auto release{RESET} - {YELLOW}builds the crate in release mode, fmt, increment version{RESET}
 {GREEN}cargo auto win_release{RESET} - {YELLOW}builds the crate for windows release mode, fmt, increment version{RESET}
+{GREEN}cargo auto musk_release{RESET} - {YELLOW}builds the crate as standalone musl binary that runs inside an empty container{RESET}
 {GREEN}cargo auto doc{RESET} - {YELLOW}builds the docs, copy to docs directory{RESET}
 {GREEN}cargo auto test{RESET} - {YELLOW}runs all the tests{RESET}
 {GREEN}cargo auto commit_and_push "message"{RESET} - {YELLOW}commits with message and push with mandatory message{RESET}
@@ -150,6 +153,7 @@ fn completion() -> anyhow::Result<()> {
             "build",
             "release",
             "win_release",
+            "musl_release",
             "doc",
             "test",
             "commit_and_push",
@@ -189,6 +193,7 @@ fn task_build() -> anyhow::Result<()> {
   {YELLOW}if {package_name} ok then{RESET}
 {GREEN}cargo auto release{RESET}
 {GREEN}cargo auto win_release{RESET}
+{GREEN}cargo auto musl_release{RESET}
 "#,
         package_name = cargo_toml.package_name(),
     );
@@ -205,7 +210,7 @@ fn task_release() -> anyhow::Result<()> {
   {YELLOW}After `cargo auto release`, run the compiled binary, examples and/or tests{RESET}
 {GREEN}alias msg_enc_dec=./target/release/{package_name}{RESET}
 {GREEN}msg_enc_dec --help{RESET} 
-{GREEN}msg_enc_dec activate_completion{RESET} 
+{GREEN}msg_enc_dec register_completion{RESET} 
 {GREEN}msg_enc_dec create_ssh_key{RESET}
 {GREEN}msg_enc_dec send_public_key {RESET}
 {GREEN}msg_enc_dec receive_public_key{RESET}
@@ -216,6 +221,7 @@ fn task_release() -> anyhow::Result<()> {
 
   {YELLOW}if {package_name} ok then{RESET}
 {GREEN}cargo auto win_release{RESET}
+{GREEN}cargo auto musl_release{RESET}
 "#,
         package_name = cargo_toml.package_name(),
     );
@@ -238,7 +244,7 @@ fn task_win_release() -> anyhow::Result<()> {
 
 {GREEN}alias msg_enc_dec=./msg_enc_dec.exe{RESET}
 {GREEN}msg_enc_dec --help{RESET} 
-{GREEN}msg_enc_dec activate_completion{RESET} 
+{GREEN}msg_enc_dec register_completion{RESET} 
 {GREEN}msg_enc_dec create_ssh_key{RESET}
 {GREEN}msg_enc_dec send_public_key {RESET}
 {GREEN}msg_enc_dec receive_public_key{RESET}
@@ -246,6 +252,31 @@ fn task_win_release() -> anyhow::Result<()> {
 {GREEN}msg_enc_dec message_decrypt{RESET}
 {GREEN}msg_enc_dec file_encrypt file_name{RESET}
 {GREEN}msg_enc_dec file_decrypt file_name{RESET}
+
+  {YELLOW}if  {package_name} ok then{RESET}
+{GREEN}cargo auto musl_release{RESET}
+"#,
+        package_name = cargo_toml.package_name(),
+    );
+    print_examples_cmd();
+    Ok(())
+}
+
+/// cargo build --release --target=x86_64-unknown-linux-musl
+fn task_musl_release() -> anyhow::Result<()> {
+    let cargo_toml = cl::CargoToml::read()?;
+    cl::auto_version_increment_semver_or_date()?;
+    cl::auto_cargo_toml_to_md()?;
+    cl::auto_lines_of_code("")?;
+
+    cl::run_shell_command_static("cargo fmt")?;
+    cl::run_shell_command_static("cargo clippy --no-deps --target x86_64-unknown-linux-musl")?;
+    cl::run_shell_command_static("cargo build --release --target x86_64-unknown-linux-musl")?;
+
+    println!(
+        r#"
+  {YELLOW}After `cargo auto musl_release`, run the compiled binary, examples and/or tests{RESET}
+  {YELLOW}Create a container image from scratch with this standalone musl binary{RESET}
 
   {YELLOW}if  {package_name} ok then{RESET}
 {GREEN}cargo auto doc{RESET}

@@ -108,3 +108,37 @@ The particular set of 64 characters chosen to represent the 64-digit values for 
 The base64url RFC 4648 §5 standard is URL and filename-safe, where the '+' and '/' characters are replaced by '-' and '_'.  
 The = symbol is also used as a padding suffix. The padding character is not essential for decoding, since the number of missing bytes can be inferred from the length of the encoded text. In some implementations, the padding character is mandatory, while for others it is not used.
 <https://en.wikipedia.org/wiki/Base64>
+
+## Standalone binary executable inside container
+
+TODO: create a container from scratch and copy the musl executable.
+mkdir ~/rustprojects/msg_enc_dec_cnt
+cd ~/rustprojects/msg_enc_dec_cnt
+
+// delete previous buildah container/image
+buildah images
+buildah rmi -f docker.io/bestiadev/msg_enc_dec_img
+buildah images
+
+buildah containers
+buildah rm msg_enc_dec_img
+buildah containers
+
+// create new image
+// copy the ssh private and public key. They cannot be created inside the scratch container, because it does not have ssh-keygen.
+
+buildah --name msg_enc_dec_img from scratch
+buildah add msg_enc_dec_img 'home' '/home'
+buildah add msg_enc_dec_img 'home/rustdevuser' 'home/rustdevuser'
+buildah add --chmod 700 msg_enc_dec_img 'home/rustdevuser/.ssh' 'home/rustdevuser/.ssh'
+buildah add --chmod 600 msg_enc_dec_img 'home/rustdevuser/.ssh/msg_enc_dec_ssh_1' 'home/rustdevuser/.ssh/msg_enc_dec_ssh_1'
+buildah add msg_enc_dec_img 'home/rustdevuser/.ssh/msg_enc_dec_ssh_1.pub' 'home/rustdevuser/.ssh/msg_enc_dec_ssh_1.pub'
+buildah add msg_enc_dec_img 'home/rustdevuser/rustprojects' 'home/rustdevuser/rustprojects'
+buildah add msg_enc_dec_img 'home/rustdevuser/rustprojects/msg_enc_dec' 'home/rustdevuser/rustprojects/msg_enc_dec'
+buildah add --chmod 755 msg_enc_dec_img 'home/rustdevuser/rustprojects/msg_enc_dec/msg_enc_dec' 'home/rustdevuser/rustprojects/msg_enc_dec/msg_enc_dec'
+buildah commit msg_enc_dec_img docker.io/bestiadev/msg_enc_dec_img:latest
+
+
+podman run --rm -it docker.io/bestiadev/msg_enc_dec_img /home/rustdevuser/rustprojects/msg_enc_dec/msg_enc_dec
+
+

@@ -1,5 +1,7 @@
 # .gitignore will forbid for these files and folders to be committed in git.
 
+msg_enc_dec_ssh_1
+msg_enc_dec_ssh_1.pub
 shared_secret.enc
 static_secret.enc
 

@@ -56,7 +56,7 @@
 //! Create the SSH key and protect it with a passcode.
 //!
 //! ```bash
-//! ssh-keygen -t rsa -b 2048 -f ~/.ssh/msg_enc_dec_ssh_1 -C "ssh key for msg_enc_dec"
+//! ssh-keygen -t rsa -b 2048 -f msg_enc_dec_ssh_1 -C "ssh key for msg_enc_dec"
 //! ```
 //!
 //! Save the file `msg_enc_dec_config.json` with the content:
@@ -67,7 +67,7 @@
 //! }
 //! ```
 //!
-//! The program `msg_enc_dec` will read this file to find the SSH private key in the `~/.ssh` folder.
+//! The program `msg_enc_dec` will read this file to find the SSH private key in the . folder.
 //!
 //! ## 1. Party_1: Send your SSH public key
 //!
@@ -364,7 +364,7 @@ fn print_help() -> anyhow::Result<()> {
   This is the help for this program.
 {GREEN}msg_enc_dec --help {RESET}
   
-  Activate bash completion for msg_enc_dec.
+  Register bash completion for msg_enc_dec.
 {GREEN}msg_enc_dec register_completion {RESET}
 
   {YELLOW}INITIALIZATION {RESET}
@@ -407,10 +407,9 @@ fn print_help() -> anyhow::Result<()> {
     Ok(())
 }
 
-/// Activate completion with the bash command complete.
+/// Register completion with the bash command complete.
 fn register_completion() -> anyhow::Result<()> {
-    println!("Run this command manually in bash to register ");
-    println!("completion for msg_enc_dec in this bash session:");
+    println!("Run this command manually to register completion in this bash session:");
     println!("{GREEN}complete -C msg_enc_dec msg_enc_dec{RESET}");
     println!("If you want the completion to persist in future bash sessions, add the command to your ~/.bashrc file.");
     Ok(())
@@ -453,19 +452,26 @@ pub fn completion_return_one_or_more_sub_commands(sub_commands: Vec<&str>, word_
 
 /// Create ssh key and config json.
 fn create_ssh_key() -> anyhow::Result<()> {
+    // instead of using ssh-keygen, I will create the private and public key in Rust code using ed25519-dalek
+
     println!("  {YELLOW}Generate the ssh private/public key pair. {RESET}");
     println!("  {YELLOW}Give it a good passphrase and remember it. {RESET}");
     println!("  {YELLOW}Nobody can help you if you forget the passphrase. {RESET}");
     println!("  {YELLOW}You would have to delete the old key and create a new one. {RESET}");
     println!("  {YELLOW}This ssh key will be used to save locally the secret session token for the communication. {RESET}");
-    println!();
-    println!(r#"  {YELLOW}ssh-keygen -t rsa -b 2048 -f ~/.ssh/msg_enc_dec_ssh_1 -C "ssh key for msg_enc_dec" {RESET}"#);
+    let secret_passphrase: String = dialoguer::Password::new()
+        .with_prompt(format!("{BLUE}Write secret passphrase{RESET}"))
+        .interact()?;
 
-    let shell_command = r#"ssh-keygen -t ed25519 -f ~/.ssh/msg_enc_dec_ssh_1 -C "ssh key for msg_enc_dec" "#;
-    let _status = std::process::Command::new("sh").arg("-c").arg(shell_command).spawn()?.wait()?;
+    let private_key = ssh_key::PrivateKey::random(&mut aes_gcm::aead::OsRng, ssh_key::Algorithm::Ed25519)?;
+    let encrypted_key = private_key.encrypt(&mut aes_gcm::aead::OsRng, secret_passphrase)?;
+    let path = CrossPathBuf::new("msg_enc_dec_ssh_1")?;
+    encrypted_key.write_openssh_file(&path.to_path_buf_current_os(), ssh_key::LineEnding::LF)?;
+    let path = CrossPathBuf::new("msg_enc_dec_ssh_1.pub")?;
+    private_key.public_key().write_openssh_file(&path.to_path_buf_current_os())?;
 
     println!();
-    println!("  {YELLOW}After ssh-keygen run 'msg_enc_dec send_public_key'. {RESET}");
+    println!("  {YELLOW}After create_ssh_key run 'msg_enc_dec send_public_key'. {RESET}");
     Ok(())
 }
 
@@ -503,10 +509,11 @@ fn encrypt_and_save_file(
     encrypted_secret_file_path: &CrossPathBuf,
 ) -> Result<(), anyhow::Error> {
     let (plain_seed_bytes_32bytes, plain_seed_string) = ende::random_seed_32bytes_and_string()?;
-    let private_key_path = CrossPathBuf::new(&format!("~/.ssh/{private_key_file_name}"))?;
+    let private_key_path = CrossPathBuf::new(private_key_file_name)?;
     let secret_passcode_32bytes: SecretBox<[u8; 32]> =
         ende::sign_seed_with_ssh_agent_or_private_key_file(&private_key_path, plain_seed_bytes_32bytes)?;
     let secret_string = secrecy::SecretString::from(ende::encode64_from_32bytes_to_string(secret_bytes)?);
+    debug!("secret_string: {}", secret_string.expose_secret());
     let plain_encrypted_text = ende::encrypt_symmetric(secret_passcode_32bytes, secret_string)?;
     let json_struct = EncryptedTextWithMetadata {
         plain_seed_string,
@@ -558,7 +565,7 @@ fn load_and_decrypt(private_key_file_name: &str, encrypted_secret_file_path: &Cr
     let encrypted_secret_file_string = encrypted_secret_file_path.read_to_string()?;
     let json_struct: EncryptedTextWithMetadata = serde_json::from_str(&encrypted_secret_file_string)?;
     let plain_seed_bytes_32bytes = ende::decode64_from_string_to_32bytes(&json_struct.plain_seed_string)?;
-    let private_key_path = CrossPathBuf::new(&format!("~/.ssh/{private_key_file_name}"))?;
+    let private_key_path = CrossPathBuf::new(private_key_file_name)?;
     let secret_passcode_32bytes: SecretBox<[u8; 32]> =
         ende::sign_seed_with_ssh_agent_or_private_key_file(&private_key_path, plain_seed_bytes_32bytes)?;
     let secret_string = ende::decrypt_symmetric(secret_passcode_32bytes, json_struct.plain_encrypted_text)?;
