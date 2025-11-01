@@ -99,7 +99,7 @@ fn print_help() -> anyhow::Result<()> {
 
   {YELLOW}User defined tasks in automation_tasks_rs:{RESET}
 {GREEN}cargo auto build{RESET} - {YELLOW}builds the crate in debug mode, fmt, increment version{RESET}
-{GREEN}cargo auto release{RESET} - {YELLOW}builds the crate for linux, fmt, increment version{RESET}
+{GREEN}cargo auto release{RESET} - {YELLOW}builds the crate in release mode, fmt, increment version{RESET}
 {GREEN}cargo auto doc{RESET} - {YELLOW}builds the docs, copy to docs directory{RESET}
 {GREEN}cargo auto test{RESET} - {YELLOW}runs all the tests{RESET}
 {GREEN}cargo auto commit_and_push "message"{RESET} - {YELLOW}commits with message and push with mandatory message{RESET}
@@ -175,15 +175,15 @@ fn task_build() -> anyhow::Result<()> {
     println!(
         r#"
   {YELLOW}After `cargo auto build`, run the compiled binary, examples and/or tests{RESET}
-{GREEN}alias msg_enc_dec=./target/debug/{package_name}{RESET}
+{GREEN}alias {package_name}=./target/debug/{package_name}{RESET}
 {GREEN}msg_enc_dec create_ssh_key{RESET}
 {GREEN}msg_enc_dec send_public_key {RESET}
-{GREEN}msg_enc_dec receive_send_public_key {RESET}
+{GREEN}msg_enc_dec receive_public_key {RESET}
 {GREEN}msg_enc_dec message_encrypt{RESET}
 {GREEN}msg_enc_dec message_decrypt{RESET}
 {GREEN}msg_enc_dec file_encrypt file_name{RESET}
 {GREEN}msg_enc_dec file_decrypt file_name{RESET}
-  {YELLOW}if {package_name} ok then{RESET}
+  {YELLOW}If {package_name} ok then{RESET}
 {GREEN}cargo auto release{RESET}
 "#,
         package_name = cargo_toml.package_name(),
@@ -192,13 +192,21 @@ fn task_build() -> anyhow::Result<()> {
     Ok(())
 }
 
-/// Run 'cargo build --release'.
+/// Run 'cargo build --release' and appropriate functions.
 fn task_release() -> anyhow::Result<()> {
     let cargo_toml = crate::build_cli_bin_mod::task_release()?;
 
     println!(
         r#"
   {YELLOW}After `cargo auto release`, run the compiled binary, examples and/or tests{RESET}
+{GREEN}alias {package_name}=target/release/{package_name}{RESET}
+{GREEN}msg_enc_dec create_ssh_key{RESET}
+{GREEN}msg_enc_dec send_public_key {RESET}
+{GREEN}msg_enc_dec receive_public_key {RESET}
+{GREEN}msg_enc_dec message_encrypt{RESET}
+{GREEN}msg_enc_dec message_decrypt{RESET}
+{GREEN}msg_enc_dec file_encrypt file_name{RESET}
+{GREEN}msg_enc_dec file_decrypt file_name{RESET}
   {YELLOW}If {package_name} ok then{RESET}
 {GREEN}cargo auto doc{RESET}
 "#,
@@ -244,7 +252,7 @@ fn task_commit_and_push(arg_2: Option<String>) -> anyhow::Result<()> {
     println!(
         r#"
   {YELLOW}After `cargo auto commit_and_push "message"`{RESET}
-  {YELLOW}Now, write the content of the release in the RELEASES.md in the `## Unreleased` section, then{RESET}
+  {YELLOW}Now, edit the content of the release in the RELEASES.md in the `## Unreleased` section, then{RESET}
   {YELLOW}Next, create the GitHub Release.{RESET}
 {GREEN}cargo auto github_new_release{RESET}
 "#
