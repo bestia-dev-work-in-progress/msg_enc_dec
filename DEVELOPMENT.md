@@ -108,21 +108,3 @@ The particular set of 64 characters chosen to represent the 64-digit values for 
 The base64url RFC 4648 §5 standard is URL and filename-safe, where the '+' and '/' characters are replaced by '-' and '_'.  
 The = symbol is also used as a padding suffix. The padding character is not essential for decoding, since the number of missing bytes can be inferred from the length of the encoded text. In some implementations, the padding character is mandatory, while for others it is not used.
 <https://en.wikipedia.org/wiki/Base64>
-
-## Wasmtime
-
-// TODO: wasi cannot use ssh-agent.
-
-I don't want to risk running an unknown executable on my primary system.  
-I want to isolate it to have access only to one folder.  
-We can achieve good isolation and performance using wasmtime and wasi.  
-It works on Linux, MacOS and Windows.  
-
-The binary must be build with target 
-
-Install wasmtime from <https://github.com/bytecodealliance/wasmtime>.  
-
-```bash
-mkdir ~/rustprojects/msg_enc_dec_wasi
-cd ~/rustprojects/msg_enc_dec_wasi
-```

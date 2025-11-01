@@ -69,8 +69,8 @@ fn match_arguments_and_call_tasks(mut args: std::env::Args) -> anyhow::Result<()
                 println!("  {YELLOW}Running automation task: {task}{RESET}");
                 if &task == "build" {
                     task_build()?;
-                } else if &task == "wasi_release" {
-                    task_wasi_release()?;
+                } else if &task == "release" {
+                    task_release()?;
                 } else if &task == "doc" {
                     task_doc()?;
                 } else if &task == "test" {
@@ -99,7 +99,7 @@ fn print_help() -> anyhow::Result<()> {
 
   {YELLOW}User defined tasks in automation_tasks_rs:{RESET}
 {GREEN}cargo auto build{RESET} - {YELLOW}builds the crate in debug mode, fmt, increment version{RESET}
-{GREEN}cargo auto wasi_release{RESET} - {YELLOW}builds the crate for Wasmtime, fmt, increment version{RESET}
+{GREEN}cargo auto release{RESET} - {YELLOW}builds the crate for linux, fmt, increment version{RESET}
 {GREEN}cargo auto doc{RESET} - {YELLOW}builds the docs, copy to docs directory{RESET}
 {GREEN}cargo auto test{RESET} - {YELLOW}runs all the tests{RESET}
 {GREEN}cargo auto commit_and_push "message"{RESET} - {YELLOW}commits with message and push with mandatory message{RESET}
@@ -146,7 +146,7 @@ fn completion() -> anyhow::Result<()> {
     if last_word == "cargo-auto" || last_word == "auto" {
         let sub_commands = vec![
             "build",
-            "wasi_release",
+            "release",
             "doc",
             "test",
             "commit_and_push",
@@ -184,7 +184,7 @@ fn task_build() -> anyhow::Result<()> {
 {GREEN}msg_enc_dec file_encrypt file_name{RESET}
 {GREEN}msg_enc_dec file_decrypt file_name{RESET}
   {YELLOW}if {package_name} ok then{RESET}
-{GREEN}cargo auto wasi_release{RESET}
+{GREEN}cargo auto release{RESET}
 "#,
         package_name = cargo_toml.package_name(),
     );
@@ -192,23 +192,14 @@ fn task_build() -> anyhow::Result<()> {
     Ok(())
 }
 
-/// Run 'cargo build --release --target=wasm32-wasip1'.
-fn task_wasi_release() -> anyhow::Result<()> {
-    let cargo_toml = cl::CargoToml::read()?;
-    cl::auto_version_increment_semver_or_date()?;
-    cl::auto_cargo_toml_to_md()?;
-    cl::auto_lines_of_code("")?;
-
-    cl::run_shell_command_static("cargo fmt")?;
-    cl::run_shell_command_static("cargo clippy --no-deps --target wasm32-wasip1")?;
-    cl::run_shell_command_static("cargo build --release --target wasm32-wasip1")?;
+/// Run 'cargo build --release'.
+fn task_release() -> anyhow::Result<()> {
+    let cargo_toml = crate::build_cli_bin_mod::task_release()?;
 
     println!(
         r#"
-  {YELLOW}After `cargo auto wasi_release`, run the compiled binary, examples and/or tests{RESET}
-  {YELLOW}Use the Wasmtime runtime{RESET}
-
-  {YELLOW}if  {package_name} ok then{RESET}
+  {YELLOW}After `cargo auto release`, run the compiled binary, examples and/or tests{RESET}
+  {YELLOW}If {package_name} ok then{RESET}
 {GREEN}cargo auto doc{RESET}
 "#,
         package_name = cargo_toml.package_name(),
