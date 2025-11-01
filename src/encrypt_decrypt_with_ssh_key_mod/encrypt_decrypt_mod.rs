@@ -201,6 +201,7 @@ fn sign_seed_with_private_key_file(
 
     // sign_with_ssh_private_key_file
     println!("  {YELLOW}Use ssh private key from file {RESET}");
+    debug!("private_key_file_path: {private_key_file_path}");
     let private_key = ssh_key::PrivateKey::read_openssh_file(&private_key_file_path.to_path_buf_current_os())?;
     println!("  {YELLOW}Unlock the private key {RESET}");
 

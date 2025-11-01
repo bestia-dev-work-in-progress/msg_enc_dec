@@ -3,6 +3,7 @@
 // region: library and modules with basic automation tasks
 
 mod build_cli_bin_mod;
+mod build_cli_bin_musl_mod;
 mod build_cli_bin_win_mod;
 mod build_lib_mod;
 mod build_wasm_mod;
@@ -27,7 +28,7 @@ use cl::CargoTomlPublicApiMethods;
 
 // region: library with basic automation tasks
 
-///main returns ExitCode
+/// The main() function returns ExitCode.
 fn main() -> std::process::ExitCode {
     match main_returns_anyhow_result() {
         Err(err) => {
@@ -39,7 +40,7 @@ fn main() -> std::process::ExitCode {
     }
 }
 
-/// main() returns anyhow::Result
+/// The main_returns_anyhow_result() function returns anyhow::Result.
 fn main_returns_anyhow_result() -> anyhow::Result<()> {
     gn::tracing_init()?;
     cl::exit_if_not_run_in_rust_project_root_directory();
@@ -55,7 +56,7 @@ fn main_returns_anyhow_result() -> anyhow::Result<()> {
 
 // region: match, help and completion
 
-/// match arguments and call tasks functions
+/// Match arguments and call tasks functions.
 fn match_arguments_and_call_tasks(mut args: std::env::Args) -> anyhow::Result<()> {
     // the first argument is the user defined task: (no argument for help), build, release,...
     let arg_1 = args.next();
@@ -68,12 +69,8 @@ fn match_arguments_and_call_tasks(mut args: std::env::Args) -> anyhow::Result<()
                 println!("  {YELLOW}Running automation task: {task}{RESET}");
                 if &task == "build" {
                     task_build()?;
-                } else if &task == "release" {
-                    task_release()?;
-                } else if &task == "win_release" {
-                    task_win_release()?;
-                } else if &task == "musl_release" {
-                    task_musl_release()?;
+                } else if &task == "wasi_release" {
+                    task_wasi_release()?;
                 } else if &task == "doc" {
                     task_doc()?;
                 } else if &task == "test" {
@@ -93,7 +90,7 @@ fn match_arguments_and_call_tasks(mut args: std::env::Args) -> anyhow::Result<()
     Ok(())
 }
 
-/// write a comprehensible help for user defined tasks
+/// Write a comprehensible help for user defined tasks.
 fn print_help() -> anyhow::Result<()> {
     println!(
         r#"
@@ -102,9 +99,7 @@ fn print_help() -> anyhow::Result<()> {
 
   {YELLOW}User defined tasks in automation_tasks_rs:{RESET}
 {GREEN}cargo auto build{RESET} - {YELLOW}builds the crate in debug mode, fmt, increment version{RESET}
-{GREEN}cargo auto release{RESET} - {YELLOW}builds the crate in release mode, fmt, increment version{RESET}
-{GREEN}cargo auto win_release{RESET} - {YELLOW}builds the crate for windows release mode, fmt, increment version{RESET}
-{GREEN}cargo auto musk_release{RESET} - {YELLOW}builds the crate as standalone musl binary that runs inside an empty container{RESET}
+{GREEN}cargo auto wasi_release{RESET} - {YELLOW}builds the crate for Wasmtime, fmt, increment version{RESET}
 {GREEN}cargo auto doc{RESET} - {YELLOW}builds the docs, copy to docs directory{RESET}
 {GREEN}cargo auto test{RESET} - {YELLOW}runs all the tests{RESET}
 {GREEN}cargo auto commit_and_push "message"{RESET} - {YELLOW}commits with message and push with mandatory message{RESET}
@@ -130,7 +125,7 @@ fn print_help() -> anyhow::Result<()> {
     Ok(())
 }
 
-/// all example commands in one place
+/// All example commands in one place.
 fn print_examples_cmd() {
     /*
         println!(
@@ -151,9 +146,7 @@ fn completion() -> anyhow::Result<()> {
     if last_word == "cargo-auto" || last_word == "auto" {
         let sub_commands = vec![
             "build",
-            "release",
-            "win_release",
-            "musl_release",
+            "wasi_release",
             "doc",
             "test",
             "commit_and_push",
@@ -176,7 +169,7 @@ fn completion() -> anyhow::Result<()> {
 
 // region: tasks
 
-/// cargo build
+/// Run 'cargo build' and appropriate functions.
 fn task_build() -> anyhow::Result<()> {
     let cargo_toml = crate::build_cli_bin_mod::task_build()?;
     println!(
@@ -191,9 +184,7 @@ fn task_build() -> anyhow::Result<()> {
 {GREEN}msg_enc_dec file_encrypt file_name{RESET}
 {GREEN}msg_enc_dec file_decrypt file_name{RESET}
   {YELLOW}if {package_name} ok then{RESET}
-{GREEN}cargo auto release{RESET}
-{GREEN}cargo auto win_release{RESET}
-{GREEN}cargo auto musl_release{RESET}
+{GREEN}cargo auto wasi_release{RESET}
 "#,
         package_name = cargo_toml.package_name(),
     );
@@ -201,82 +192,21 @@ fn task_build() -> anyhow::Result<()> {
     Ok(())
 }
 
-/// cargo build --release
-fn task_release() -> anyhow::Result<()> {
-    let cargo_toml = crate::build_cli_bin_mod::task_release()?;
-
-    println!(
-        r#"
-  {YELLOW}After `cargo auto release`, run the compiled binary, examples and/or tests{RESET}
-{GREEN}alias msg_enc_dec=./target/release/{package_name}{RESET}
-{GREEN}msg_enc_dec --help{RESET} 
-{GREEN}msg_enc_dec register_completion{RESET} 
-{GREEN}msg_enc_dec create_ssh_key{RESET}
-{GREEN}msg_enc_dec send_public_key {RESET}
-{GREEN}msg_enc_dec receive_public_key{RESET}
-{GREEN}msg_enc_dec message_encrypt{RESET}
-{GREEN}msg_enc_dec message_decrypt{RESET}
-{GREEN}msg_enc_dec file_encrypt file_name{RESET}
-{GREEN}msg_enc_dec file_decrypt file_name{RESET}
-
-  {YELLOW}if {package_name} ok then{RESET}
-{GREEN}cargo auto win_release{RESET}
-{GREEN}cargo auto musl_release{RESET}
-"#,
-        package_name = cargo_toml.package_name(),
-    );
-    print_examples_cmd();
-    Ok(())
-}
-
-/// cargo build --release for x86_64-pc-windows-gnu
-fn task_win_release() -> anyhow::Result<()> {
-    let cargo_toml = crate::build_cli_bin_win_mod::task_release()?;
-
-    println!(
-        r#"
-  {YELLOW}After `cargo auto win_release`, run the compiled binary, examples and/or tests{RESET}
-  {YELLOW}In Windows git-bash, copy the exe file from the crustde container to Windows.{RESET}
-{GREEN}mkdir ~/rustprojects/{package_name}{RESET}
-{GREEN}cd ~/rustprojects/{package_name}{RESET}
-{GREEN}sshadd crustde{RESET}
-{GREEN}scp rustdevuser@crustde:/home/rustdevuser/rustprojects/{package_name}/target/x86_64-pc-windows-gnu/release/{package_name}.exe . {RESET}
-
-{GREEN}alias msg_enc_dec=./msg_enc_dec.exe{RESET}
-{GREEN}msg_enc_dec --help{RESET} 
-{GREEN}msg_enc_dec register_completion{RESET} 
-{GREEN}msg_enc_dec create_ssh_key{RESET}
-{GREEN}msg_enc_dec send_public_key {RESET}
-{GREEN}msg_enc_dec receive_public_key{RESET}
-{GREEN}msg_enc_dec message_encrypt{RESET}
-{GREEN}msg_enc_dec message_decrypt{RESET}
-{GREEN}msg_enc_dec file_encrypt file_name{RESET}
-{GREEN}msg_enc_dec file_decrypt file_name{RESET}
-
-  {YELLOW}if  {package_name} ok then{RESET}
-{GREEN}cargo auto musl_release{RESET}
-"#,
-        package_name = cargo_toml.package_name(),
-    );
-    print_examples_cmd();
-    Ok(())
-}
-
-/// cargo build --release --target=x86_64-unknown-linux-musl
-fn task_musl_release() -> anyhow::Result<()> {
+/// Run 'cargo build --release --target=wasm32-wasip1'.
+fn task_wasi_release() -> anyhow::Result<()> {
     let cargo_toml = cl::CargoToml::read()?;
     cl::auto_version_increment_semver_or_date()?;
     cl::auto_cargo_toml_to_md()?;
     cl::auto_lines_of_code("")?;
 
     cl::run_shell_command_static("cargo fmt")?;
-    cl::run_shell_command_static("cargo clippy --no-deps --target x86_64-unknown-linux-musl")?;
-    cl::run_shell_command_static("cargo build --release --target x86_64-unknown-linux-musl")?;
+    cl::run_shell_command_static("cargo clippy --no-deps --target wasm32-wasip1")?;
+    cl::run_shell_command_static("cargo build --release --target wasm32-wasip1")?;
 
     println!(
         r#"
-  {YELLOW}After `cargo auto musl_release`, run the compiled binary, examples and/or tests{RESET}
-  {YELLOW}Create a container image from scratch with this standalone musl binary{RESET}
+  {YELLOW}After `cargo auto wasi_release`, run the compiled binary, examples and/or tests{RESET}
+  {YELLOW}Use the Wasmtime runtime{RESET}
 
   {YELLOW}if  {package_name} ok then{RESET}
 {GREEN}cargo auto doc{RESET}
@@ -287,7 +217,7 @@ fn task_musl_release() -> anyhow::Result<()> {
     Ok(())
 }
 
-/// cargo doc, then copies to /docs/ folder, because this is a GitHub standard folder
+/// Run 'cargo doc', then copy to /docs/ folder, because this is a GitHub standard folder.
 fn task_doc() -> anyhow::Result<()> {
     ts::task_doc()?;
     // message to help user with next move
@@ -304,7 +234,7 @@ fn task_doc() -> anyhow::Result<()> {
     Ok(())
 }
 
-/// cargo test
+/// Run 'cargo test'.
 fn task_test() -> anyhow::Result<()> {
     cl::run_shell_command_static("cargo test")?;
     println!(
@@ -317,7 +247,7 @@ fn task_test() -> anyhow::Result<()> {
     Ok(())
 }
 
-/// commit and push
+/// Run 'commit' and 'push'. Separate docs and other updates.
 fn task_commit_and_push(arg_2: Option<String>) -> anyhow::Result<()> {
     ts::task_commit_and_push(arg_2)?;
     println!(
@@ -331,7 +261,7 @@ fn task_commit_and_push(arg_2: Option<String>) -> anyhow::Result<()> {
     Ok(())
 }
 
-/// create a new release on github and uploads binary executables
+/// Create a new release on github and uploads binary executables.
 fn task_github_new_release() -> anyhow::Result<()> {
     ts::task_github_new_release()?;
     println!(
